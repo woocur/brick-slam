@@ -435,7 +435,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   // ---------- sound (Web Audio, synthesized) ----------
   const sfx = (() => {
-    let ac = null, out = null, noiseBuf = null, on = true, ext = false;
+    let ac = null, out = null, mus = null, noiseBuf = null, on = true, ext = false;
     try { on = localStorage.getItem('brickpush-sound') !== 'off'; } catch (e) {}
     function ctx() {
       if (!ac) {
@@ -443,6 +443,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (!AC) return null;
         ac = new AC();
         out = ac.createGain(); out.gain.value = 0.9; out.connect(ac.destination);
+        mus = ac.createGain(); mus.gain.value = 0; mus.connect(out);
         noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
         const d = noiseBuf.getChannelData(0);
         for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -451,28 +452,28 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       return ac;
     }
     const live = () => on && !ext && ctx();
-    function tone(f, t0, dur, { type = 'sine', vol = 0.3, to = 0, attack = 0.004 } = {}) {
+    function tone(f, t0, dur, { type = 'sine', vol = 0.3, to = 0, attack = 0.004, dest = out } = {}) {
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = type; o.frequency.setValueAtTime(f, t0);
       if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dur + 0.02);
+      o.connect(g); g.connect(dest); o.start(t0); o.stop(t0 + dur + 0.02);
     }
-    function noise(t0, dur, { vol = 0.3, freq = 1200, to = 0, q = 0.8, type = 'bandpass' } = {}) {
+    function noise(t0, dur, { vol = 0.3, freq = 1200, to = 0, q = 0.8, type = 'bandpass', dest = out } = {}) {
       const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
       src.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t0);
       if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
       g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      src.connect(f); f.connect(g); g.connect(out); src.start(t0); src.stop(t0 + dur + 0.02);
+      src.connect(f); f.connect(g); g.connect(dest); src.start(t0); src.stop(t0 + dur + 0.02);
     }
     // wall notes: top, right, bottom, left (a pentatonic spread so hits sound good together)
     const WALL = [523.25, 659.25, 392, 440];
     const api = {
       get on() { return on; },
-      set(v) { on = v; try { localStorage.setItem('brickpush-sound', v ? 'on' : 'off'); } catch (e) {} if (v) ctx(); api.onchange && api.onchange(); },
-      external(m) { ext = !!m; },     // platform mute (CrazyGames settings, ads)
+      set(v) { on = v; try { localStorage.setItem('brickpush-sound', v ? 'on' : 'off'); } catch (e) {} if (v) ctx(); musLevel(); api.onchange && api.onchange(); },
+      external(m) { ext = !!m; musLevel(); },     // platform mute (CrazyGames settings, ads)
       unlock() { if (on && !ext) ctx(); },
       spawn(load) {                   // load 0..1: how full the board is
         if (!live()) return; const t = ac.currentTime;
@@ -508,8 +509,59 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (isBest) [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, t + i * 0.1, 0.3, { type: 'triangle', vol: 0.18 }));
         else [392, 329.63, 261.63].forEach((f, i) => tone(f, t + i * 0.14, 0.32, { type: 'triangle', vol: 0.18 }));
       },
-      tap() { if (!live()) return; tone(880, ac.currentTime, 0.04, { type: 'sine', vol: 0.06 }); }
+      tap() { if (!live()) return; tone(880, ac.currentTime, 0.04, { type: 'sine', vol: 0.06 }); },
+      music(play) { playing = play; if (play) { if (ctx()) { step = 0; nextT = ac.currentTime + 0.08; } } musLevel(); },
+      setFever(f) { feverOn = f; },
+      pause(p) { if (!ac) return; if (p) ac.suspend(); else if (playing) ac.resume(); },
+      _render(t0, bars, fev) {         // offline preview helper
+        let t = t0; feverOn = fev;
+        for (let i = 0; i < bars * 16; i++) { beat(i, t); t += 60 / (feverOn ? 146 : 132) / 4; }
+      }
     };
+
+    // ---- background music: 132 BPM arcade loop in A minor (Am F C G), faster and busier in Fever ----
+    let playing = false, feverOn = false, step = 0, nextT = 0;
+    const MUS_VOL = 0.42;
+    function musLevel() {
+      if (!ac) return;
+      const v = playing && on && !ext ? MUS_VOL : 0;
+      mus.gain.cancelScheduledValues(ac.currentTime);
+      mus.gain.setTargetAtTime(v, ac.currentTime, v ? 0.05 : 0.12);
+    }
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+    const ROOTS = [45, 41, 48, 43];                  // A2 F2 C3 G2
+    const CHORD = [[57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62]];
+    // lead motif (16th steps, MIDI or 0 = rest), two bars that alternate
+    const LEAD = [
+      [76, 0, 74, 0, 72, 0, 74, 76, 0, 0, 79, 0, 76, 0, 74, 0],
+      [72, 0, 74, 0, 76, 0, 79, 0, 81, 0, 79, 76, 0, 74, 72, 0]
+    ];
+    function beat(i, t) {
+      const s16 = i % 16, bar = Math.floor(i / 16) % 4, d = mus;
+      const root = ROOTS[bar];
+      // drums
+      if (s16 % 4 === 0) tone(150, t, 0.16, { vol: 0.9, to: 42, dest: d });                                   // kick
+      if (s16 === 4 || s16 === 12) { noise(t, 0.14, { vol: 0.45, freq: 1900, q: 0.6, dest: d }); tone(220, t, 0.08, { vol: 0.2, to: 160, dest: d }); }
+      if (feverOn ? true : s16 % 2 === 0) noise(t, 0.035, { vol: s16 % 4 === 2 ? 0.22 : 0.12, freq: 8000, type: 'highpass', dest: d });
+      // driving bass: root on the beat, octave on the off-8ths
+      if (s16 % 2 === 0) tone(hz(root + (s16 % 4 === 2 ? 12 : 0)), t, 0.16, { type: 'sawtooth', vol: 0.16, dest: d });
+      // chord stabs
+      if (s16 === 0 || s16 === 6 || s16 === 10) CHORD[bar].forEach(m => tone(hz(m), t, 0.12, { type: 'square', vol: 0.035, dest: d }));
+      // lead
+      const n = LEAD[bar % 2][s16];
+      if (n) tone(hz(n), t, 0.2, { type: 'triangle', vol: 0.14, dest: d });
+      // fever arpeggio on every 16th
+      if (feverOn) { const ch = CHORD[bar]; tone(hz(ch[s16 % 3] + 12), t, 0.07, { type: 'square', vol: 0.045, dest: d }); }
+    }
+    setInterval(() => {
+      if (!playing || !ac || ac.state !== 'running') return;
+      if (nextT < ac.currentTime - 0.2) nextT = ac.currentTime + 0.05;   // recovered from a stall
+      while (nextT < ac.currentTime + 0.15) {
+        if (on && !ext) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
+        nextT += 60 / (feverOn ? 146 : 132) / 4;
+        step++;
+      }
+    }, 25);
     return api;
   })();
   function showSound() {
@@ -642,6 +694,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     over = true; drag = null;
     hooks.gameStop();
     const isBest = score > best;
+    sfx.music(false);
     sfx.over(isBest && score > 0);
     if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
     showBest();
@@ -849,6 +902,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         }
         if (b.bump && (b.bump.t -= dt * 5) <= 0) b.bump = null;
       }
+      sfx.setFever(fever(now));
       $('feverfill').style.width = fever(now) ? ((feverUntil - now) / feverTotal * 100) + '%' : '0';
     }
     for (let i = parts.length - 1; i >= 0; i--) {
@@ -876,6 +930,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     window.scrollTo(0, 0);
     reset();
     hooks.gameStart();
+    sfx.music(true);
   }
   function showView(id) {
     ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
@@ -883,6 +938,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function goHome() {
     if (!over) hooks.gameStop();
+    sfx.music(false);
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
@@ -1015,6 +1071,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   document.addEventListener('visibilitychange', () => {
     const now = performance.now();
+    sfx.pause(document.hidden);
     if (document.hidden) hiddenAt = now;
     else if (hiddenAt && !over) { const gap = now - hiddenAt; nextSpawn += gap; if (feverUntil > hiddenAt) feverUntil += gap; hiddenAt = 0; }
   });
