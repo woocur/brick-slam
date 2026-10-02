@@ -358,6 +358,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const CFG = { 4: { cap: 16, need: 6 }, 5: { cap: 25, need: 8 } };
   const SLIDE_SPEED = 14;      // cells per second
   const FEVER_MS = 8000, FEVER_EXTEND_MS = 5000;
+  // spawn pacing: starts at 1.4 s, speeds up per spawn down to SPAWN_MIN_MS; Fever spawns 1.3x faster
+  const SPAWN_MIN_MS = 750, SPAWN_RAMP = 0.9925, FEVER_SPAWN = 0.77;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let N = 4, S = 0, M = 0, B = 0, cell = 0;
@@ -633,7 +635,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
     sfx.spawn(blocks.length / (N * N));
-    interval = Math.max(450, interval * 0.985);
+    interval = Math.max(SPAWN_MIN_MS, interval * SPAWN_RAMP);
     hud();
   }
 
@@ -901,7 +903,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (!over) {
       if (now >= nextSpawn) {
         spawn(now);
-        nextSpawn = now + interval * (fever(now) ? 0.45 : 1);
+        nextSpawn = now + interval * (fever(now) ? FEVER_SPAWN : 1);
       }
       if (mult > 1 && !fever(now)) { mult = 1; hud(); sfx.feverEnd(); }
       const step = SLIDE_SPEED * dt;
