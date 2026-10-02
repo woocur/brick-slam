@@ -488,17 +488,24 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         else [392, 329.63, 261.63].forEach((f, i) => tone(f, t + i * 0.14, 0.32, { type: 'triangle', vol: 0.18 }));
       },
       tap() { if (!live()) return; tone(880, ac.currentTime, 0.04, { type: 'sine', vol: 0.06 }); },
-      music(play) { playing = play; if (play) { if (ctx()) { step = 0; nextT = ac.currentTime + 0.08; } } musLevel(); },
+      // mode: 'off' | 'title' (calm groove) | 'game' (full track)
+      music(m) {
+        const was = mode; mode = m || 'off'; playing = mode !== 'off';
+        if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; }
+        musLevel();
+      },
+      get musicMode() { return mode; },
       setFever(f) { feverOn = f; },
       pause(p) { if (!ac) return; if (p) ac.suspend(); else if (playing) ac.resume(); },
       _render(t0, bars, fev) {         // offline preview helper
         let t = t0; feverOn = fev;
-        for (let i = 0; i < bars * 16; i++) { beat(i, t); t += 60 / (feverOn ? 146 : 132) / 4; }
+        for (let i = 0; i < bars * 16; i++) { beat(i, t); t += 60 / bpm() / 4; }
       }
     };
 
     // ---- background music: 132 BPM arcade loop in A minor (Am F C G), faster and busier in Fever ----
-    let playing = false, feverOn = false, step = 0, nextT = 0;
+    let playing = false, mode = 'off', feverOn = false, step = 0, nextT = 0;
+    const bpm = () => mode === 'title' ? 116 : feverOn ? 146 : 132;
     const MUS_VOL = 0.42;
     function musLevel() {
       if (!ac) return;
@@ -517,6 +524,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     function beat(i, t) {
       const s16 = i % 16, bar = Math.floor(i / 16) % 4, d = mus;
       const root = ROOTS[bar];
+      if (mode === 'title') {         // calm title groove: soft kick, hats, bass, chords and a sparse lead
+        if (s16 === 0 || s16 === 8) tone(130, t, 0.18, { vol: 0.55, to: 45, dest: d });
+        if (s16 % 4 === 2) noise(t, 0.03, { vol: 0.1, freq: 8000, type: 'highpass', dest: d });
+        if (s16 % 4 === 0) tone(hz(root), t, 0.3, { type: 'triangle', vol: 0.2, dest: d });
+        if (s16 === 0 || s16 === 10) CHORD[bar].forEach(m => tone(hz(m), t, 0.5, { type: 'triangle', vol: 0.05, attack: 0.03, dest: d }));
+        const ln = LEAD[bar % 2][s16];
+        if (ln && s16 % 4 === 0) tone(hz(ln), t, 0.35, { type: 'sine', vol: 0.1, dest: d });
+        return;
+      }
       // drums
       if (s16 % 4 === 0) tone(150, t, 0.16, { vol: 0.9, to: 42, dest: d });                                   // kick
       if (s16 === 4 || s16 === 12) { noise(t, 0.14, { vol: 0.45, freq: 1900, q: 0.6, dest: d }); tone(220, t, 0.08, { vol: 0.2, to: 160, dest: d }); }
@@ -536,7 +552,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (nextT < ac.currentTime - 0.2) nextT = ac.currentTime + 0.05;   // recovered from a stall
       while (nextT < ac.currentTime + 0.15) {
         if (on && !ext) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
-        nextT += 60 / (feverOn ? 146 : 132) / 4;
+        nextT += 60 / bpm() / 4;
         step++;
       }
     }, 25);
@@ -549,8 +565,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   sfx.onchange = showSound;
   showSound();
   // browsers only allow audio after a user gesture
-  window.addEventListener('pointerdown', () => sfx.unlock(), { passive: true });
-  window.addEventListener('keydown', () => sfx.unlock());
+  const firstSound = () => { sfx.unlock(); if (sfx.musicMode === 'off' && !$('home').hidden) sfx.music('title'); };
+  window.addEventListener('pointerdown', firstSound, { passive: true });
+  window.addEventListener('keydown', firstSound);
   document.addEventListener('click', e => { if (e.target.closest('.btn, .back, .tabs button, .langsw')) sfx.tap(); });
   applyLang(lang);
 
@@ -672,7 +689,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     over = true; drag = null;
     hooks.gameStop();
     const isBest = score > best;
-    sfx.music(false);
+    sfx.music('off');
     sfx.over(isBest && score > 0);
     if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
     showBest();
@@ -908,7 +925,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     window.scrollTo(0, 0);
     reset();
     hooks.gameStart();
-    sfx.music(true);
+    sfx.music('game');
   }
   function showView(id) {
     ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
@@ -916,7 +933,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function goHome() {
     if (!over) hooks.gameStop();
-    sfx.music(false);
+    sfx.music('title');
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
