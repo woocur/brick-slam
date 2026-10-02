@@ -709,7 +709,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   // ---------- shared ranking (Firebase Firestore) ----------
   // From Firebase console > Project settings > Your apps > Web app. These values are public by design.
-  const FIREBASE_CONFIG = null;
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBAxFQWTLTtlbMjnlhD1q6QKj_squLcbvI",
+    authDomain: "brick-slam-73330.firebaseapp.com",
+    projectId: "brick-slam-73330",
+    storageBucket: "brick-slam-73330.firebasestorage.app",
+    messagingSenderId: "669317224549",
+    appId: "1:669317224549:web:8c05d6007fb2d624d08e8c"
+  };
   const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
   let fs = null, api = null, myId = null, myData = null, rankTab = 4, rankFailed = false;
   const boards = { 4: null, 5: null };
