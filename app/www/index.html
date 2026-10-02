@@ -60,8 +60,23 @@ button { touch-action: manipulation; }
 .view .back { align-self: flex-start; }
 .title { gap: 28px; min-height: calc(100svh - 64px); justify-content: center; }
 .title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; text-align: center; }
-.titleart { display: block; width: min(100%, 400px); height: auto; align-self: center; margin-block: -12px -20px; }
+.titleart { display: block; width: min(100%, 400px, calc(100svh - 290px)); min-width: 200px; height: auto; align-self: center; margin-block: -12px -20px; }
 .title h1 em { font-style: normal; color: var(--glow); }
+/* short screens (landscape phones, game portals): keep each view on one screen */
+@media (max-height: 760px) {
+  .home { padding-block: 16px 20px; }
+  .title { gap: 16px; min-height: calc(100svh - 36px); }
+  .title .play { gap: 8px; }
+  .title .btn { padding-block: 10px; }
+  .view { gap: 12px; }
+}
+@media (min-width: 720px) and (max-height: 760px) {
+  .home { max-width: 760px; }
+  .title .play, .sizepick, #okBtn { width: 100%; max-width: 420px; align-self: center; }
+  .how ol { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .how li { grid-template-columns: 1fr; gap: 8px; }
+  .how li div { font-size: 14px; }
+}
 .langsw {
   position: relative; display: grid; grid-template-columns: 1fr 1fr; align-self: center; width: 220px;
   padding: 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--board); cursor: pointer; margin-top: 6px;
