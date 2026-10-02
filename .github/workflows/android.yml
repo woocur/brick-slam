@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: app
@@ -49,3 +51,18 @@ jobs:
           path: |
             app/android/app/build/outputs/bundle/release/*.aab
             app/android/app/build/outputs/apk/debug/*.apk
+      - name: Publish test APK and bundle
+        working-directory: app/android/app/build/outputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp apk/debug/app-debug.apk "$RUNNER_TEMP/brick-slam-test.apk"
+          cp bundle/release/app-release.aab "$RUNNER_TEMP/brick-slam-release.aab"
+          # rolling pre-release so the newest test APK is always at the same place
+          gh release delete test-build --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
+          gh release create test-build "$RUNNER_TEMP/brick-slam-test.apk" -R "$GITHUB_REPOSITORY" --prerelease \
+            --title "Test build #${{ github.run_number }}" --notes "Install brick-slam-test.apk on an Android phone to try the app. Ads are Google test ads."
+          # bundle for Play upload goes to the builds branch (signed later with the upload key)
+          cd "$RUNNER_TEMP" && mkdir out && cp brick-slam-release.aab out/ && cd out
+          git init -q -b builds && git add . && git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Build #${{ github.run_number }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
