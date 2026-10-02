@@ -488,6 +488,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function gameOver() {
     over = true; drag = null;
+    hooks.gameStop();
     const isBest = score > best;
     if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
     showBest();
@@ -711,18 +712,23 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     requestAnimationFrame(tick);
   }
 
+  // platform hooks: no-ops here; store builds (CrazyGames, Android app) set window.BrickHooks before this script
+  const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); } }, window.BrickHooks || {});
+  function play(n) { hooks.beforePlay(() => start(n)); }
   function start(n) {
     if (n) N = n;
     $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
     document.body.classList.add('playing');
     window.scrollTo(0, 0);
     reset();
+    hooks.gameStart();
   }
   function showView(id) {
     ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
     window.scrollTo(0, 0);
   }
   function goHome() {
+    if (!over) hooks.gameStop();
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
@@ -744,7 +750,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   $('rankBtn').addEventListener('click', () => { showView('rank'); setTab(pickSize); });
   $('howBack').addEventListener('click', () => showView('titleView'));
   $('rankBack').addEventListener('click', () => showView('titleView'));
-  $('okBtn').addEventListener('click', () => start(pickSize));
+  $('okBtn').addEventListener('click', () => play(pickSize));
 
   // ---------- shared ranking (Firebase Firestore) ----------
   // From Firebase console > Project settings > Your apps > Web app. These values are public by design.
@@ -849,7 +855,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
   })();
 
-  $('retryBtn').addEventListener('click', () => start());
+  $('retryBtn').addEventListener('click', () => play());
   $('menuBtn').addEventListener('click', goHome);
   $('backBtn').addEventListener('click', goHome);
 
