@@ -184,6 +184,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 .nick input:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; border-color: transparent; }
 .rank-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .ranked { margin: 0; font-size: 14px; color: var(--ink); }
+.card .nick input { min-width: 0; }
 .langbar { display: flex; justify-content: flex-end; }
 .lang { display: flex; gap: 4px; background: var(--board); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
 .lang button { font-family: var(--body); font-size: 13px; padding: 5px 10px; border: 0; border-radius: 6px; cursor: pointer; background: transparent; color: var(--muted); }
@@ -480,6 +481,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('newBest').hidden = !isBest || score === 0;
     $('overOv').hidden = false;
     submitScore(N, score);
+    // let players name themselves right on the result card
+    if (!$('nickRow').hidden) $('retryBtn').before($('nickRow'));
     $('retryBtn').focus();
   }
 
@@ -704,6 +707,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
+    $('rankList').after($('nickRow'));
     showBest();
   }
 
