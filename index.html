@@ -132,6 +132,7 @@ button { touch-action: manipulation; }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .bestline { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bestline b { color: var(--ink); font-weight: 600; }
+.privacy { display: block; margin: 0; text-align: center; font-size: 12px; color: var(--muted); opacity: .75; text-decoration: underline; text-underline-offset: 2px; }
 
 .how h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0; }
 .how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
@@ -250,6 +251,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         <button class="snd" id="sndTitle" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
       </div>
       <p class="bestline" id="bestLine"></p>
+      <a class="privacy" href="https://woocur.github.io/brick-slam/privacy.html" target="_blank" rel="noopener" data-i18n="privacy"></a>
     </div>
   </section>
 
@@ -359,6 +361,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
       hint: '벽돌을 쓸어서 밀기 · 빛나는 바를 눌러 피버', keyboard: '키보드',
       rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
+      privacy: '개인정보처리방침',
       rankSoon: '랭킹은 곧 열려요', rankFail: '랭킹을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.',
       rankEmpty: '아직 기록이 없어요. 첫 기록을 남겨 보세요.', noName: '이름 없음', me: '나',
       readOnly: '보기 전용으로 열려 있어서 내 기록은 랭킹에 올라가지 않아요. 기록을 올리려면 만든 사람에게 편집 권한으로 초대해 달라고 하세요.',
@@ -379,6 +382,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
       hint: 'Swipe a brick to push · Tap a glowing bar for Fever', keyboard: 'Keys',
       rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
+      privacy: 'Privacy Policy',
       rankSoon: 'Ranking opens soon', rankFail: 'Couldn\'t load the ranking. Refresh in a moment.',
       rankEmpty: 'No scores yet. Be the first!', noName: 'No name', me: 'you',
       readOnly: 'This page is view-only for you, so your scores won\'t be ranked. Ask the owner to invite you as an editor.',
