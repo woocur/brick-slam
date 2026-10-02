@@ -8,6 +8,12 @@
 <meta property="og:title" content="Brick Slam · 브릭 슬램">
 <meta property="og:description" content="벽돌을 밀어서 벽에 쾅! 빛나는 벽을 눌러 피버. 친구들과 랭킹 겨루기.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://woocur.github.io/brick-slam/">
+<meta property="og:image" content="https://woocur.github.io/brick-slam/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="title.jpg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2315131f'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='%23c4623a'/%3E%3Crect x='28' y='4' width='3' height='24' rx='1.5' fill='%23ffb547'/%3E%3C/svg%3E">
@@ -54,6 +60,7 @@ button { touch-action: manipulation; }
 .view .back { align-self: flex-start; }
 .title { gap: 28px; min-height: calc(100svh - 64px); justify-content: center; }
 .title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; text-align: center; }
+.titleart { display: block; width: min(100%, 400px); height: auto; align-self: center; margin-block: -12px -20px; }
 .title h1 em { font-style: normal; color: var(--glow); }
 .langsw {
   position: relative; display: grid; grid-template-columns: 1fr 1fr; align-self: center; width: 220px;
@@ -204,11 +211,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
 <main class="home" id="home">
   <section class="view title" id="titleView">
-    <h1 data-i18n-html="titleHtml">브릭 <em>슬램</em></h1>
-    <div class="mini" aria-hidden="true">
-      <div class="bar t"></div><div class="bar r"></div><div class="bar b"></div><div class="bar l"></div>
-      <div class="grid"><div class="brick s1"></div><div class="brick s2"></div><div class="brick s3"></div></div>
-    </div>
+    <img class="titleart" src="title.jpg" width="810" height="810" alt="Brick Slam · 브릭 슬램">
     <div class="play">
       <button class="btn" id="startBtn" data-i18n="startBtn"></button>
       <button class="btn alt" id="rankBtn" data-i18n="rankBtn"></button>
