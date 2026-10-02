@@ -49,11 +49,23 @@ button { touch-action: manipulation; }
   padding-top: calc(env(safe-area-inset-top, 0px) + 24px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
   display: flex; flex-direction: column; gap: 28px; box-sizing: border-box;
 }
-.hero { display: flex; flex-direction: column; gap: 10px; }
-.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; }
-.hero h1 em { font-style: normal; color: var(--glow); }
-.hero p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--muted); text-wrap: balance; }
-.hero p b { color: var(--ink); font-weight: 600; }
+.home { min-height: 100%; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+.view .back { align-self: flex-start; }
+.title { gap: 28px; min-height: calc(100svh - 64px); justify-content: center; }
+.title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; text-align: center; }
+.title h1 em { font-style: normal; color: var(--glow); }
+.langsw {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; align-self: center; width: 220px;
+  padding: 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--board); cursor: pointer; margin-top: 6px;
+}
+.langsw span { position: relative; z-index: 1; font-family: var(--body); font-size: 14px; padding: 8px 0; color: var(--muted); text-align: center; transition: color .2s; }
+.langsw i { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 999px; background: var(--line); transition: transform .25s cubic-bezier(.3, .7, .3, 1); }
+.langsw[aria-checked="true"] i { transform: translateX(100%); }
+.langsw[aria-checked="false"] span:first-child, .langsw[aria-checked="true"] span:nth-child(2) { color: var(--ink); }
+.langsw:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.sizepick { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.sizepick .tabs button { font-size: 15px; padding: 7px 14px; }
 
 .mini { --u: min(54px, 13vw); position: relative; width: calc(var(--u) * 4 + 52px); aspect-ratio: 1; max-width: 100%; align-self: center; }
 .mini .grid {
@@ -99,7 +111,7 @@ button { touch-action: manipulation; }
 .bestline { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bestline b { color: var(--ink); font-weight: 600; }
 
-.how h2 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0 0 12px; }
+.how h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0; }
 .how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
 .how li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; counter-increment: step; }
 .how li::before {
@@ -109,7 +121,7 @@ button { touch-action: manipulation; }
 .how li div { min-width: 0; font-size: 15px; line-height: 1.55; }
 .how li b { display: block; font-weight: 600; margin-bottom: 2px; }
 .how li span { color: var(--muted); }
-.how .end { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.how .end { margin: 0; font-size: 14px; color: var(--muted); }
 .how .end b { color: var(--danger); font-weight: 600; }
 
 /* ---------- game ---------- */
@@ -185,37 +197,49 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 .rank-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .ranked { margin: 0; font-size: 14px; color: var(--ink); }
 .card .nick input { min-width: 0; }
-.langbar { display: flex; justify-content: flex-end; }
-.lang { display: flex; gap: 4px; background: var(--board); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
-.lang button { font-family: var(--body); font-size: 13px; padding: 5px 10px; border: 0; border-radius: 6px; cursor: pointer; background: transparent; color: var(--muted); }
-.lang button[aria-pressed="true"] { background: var(--line); color: var(--ink); }
-.lang button:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .mini .s1, .mini .bar.r::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mini .s1, .mini .bar.r::after { animation: none; } .langsw i { transition: none; } }
 </style>
 </head>
 <body>
 
 <main class="home" id="home">
-  <div class="langbar">
-    <div class="lang" role="group" aria-label="Language">
-      <button id="langKo" lang="ko" aria-pressed="true">한국어</button>
-      <button id="langEn" lang="en" aria-pressed="false">English</button>
-    </div>
-  </div>
-  <section class="hero">
+  <section class="view title" id="titleView">
     <h1 data-i18n-html="titleHtml">브릭 <em>슬램</em></h1>
-    <p data-i18n-html="tagline"></p>
+    <div class="mini" aria-hidden="true">
+      <div class="bar t"></div><div class="bar r"></div><div class="bar b"></div><div class="bar l"></div>
+      <div class="grid"><div class="brick s1"></div><div class="brick s2"></div><div class="brick s3"></div></div>
+    </div>
+    <div class="play">
+      <button class="btn" id="startBtn" data-i18n="startBtn"></button>
+      <button class="btn alt" id="rankBtn" data-i18n="rankBtn"></button>
+      <button class="langsw" id="langSw" role="switch" aria-checked="false" aria-label="Language / 언어">
+        <span lang="ko">한국어</span><span lang="en">English</span><i aria-hidden="true"></i>
+      </button>
+      <p class="bestline" id="bestLine"></p>
+    </div>
   </section>
-  <div class="mini" aria-hidden="true">
-    <div class="bar t"></div><div class="bar r"></div><div class="bar b"></div><div class="bar l"></div>
-    <div class="grid"><div class="brick s1"></div><div class="brick s2"></div><div class="brick s3"></div></div>
-  </div>
-  <section class="play">
-    <button class="btn" id="start4" data-i18n-html="start4"></button>
-    <button class="btn alt" id="start5" data-i18n-html="start5"></button>
-    <p class="bestline" id="bestLine"></p>
+
+  <section class="view how" id="howView" hidden>
+    <button class="back" id="howBack" data-i18n="back"></button>
+    <h2 data-i18n="howTitle"></h2>
+    <ol>
+      <li><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
+      <li><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
+      <li><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
+    </ol>
+    <p class="end" data-i18n-html="howEnd"></p>
+    <div class="sizepick">
+      <span data-i18n="boardSize"></span>
+      <div class="tabs" role="group" data-i18n-aria="boardSize">
+        <button id="size4" aria-pressed="true">4 × 4</button>
+        <button id="size5" aria-pressed="false">5 × 5</button>
+      </div>
+    </div>
+    <button class="btn" id="okBtn">OK</button>
   </section>
-  <section class="rank" id="rank">
+
+  <section class="view rank" id="rank" hidden>
+    <button class="back" id="rankBack" data-i18n="back"></button>
     <div class="rank-head">
       <h2 data-i18n="ranking"></h2>
       <div class="tabs" role="group" data-i18n-aria="boardSize">
@@ -229,15 +253,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       <input id="nick" maxlength="12" autocomplete="nickname" data-i18n-ph="nickPh">
     </div>
     <p class="rank-note" id="rankNote" hidden></p>
-  </section>
-  <section class="how">
-    <h2 data-i18n="howTitle"></h2>
-    <ol>
-      <li><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
-      <li><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
-      <li><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
-    </ol>
-    <p class="end" data-i18n-html="howEnd"></p>
   </section>
 </main>
 
@@ -293,8 +308,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const I18N = {
     ko: {
       docTitle: '브릭 슬램', titleHtml: '브릭 <em>슬램</em>',
-      tagline: '벽돌을 <b>밀어서 벽에 쾅!</b> 벽이 빛나면 눌러서 <b>피버</b>.',
-      start4: '4 × 4 시작 <small>기본</small>', start5: '5 × 5 시작 <small>넓은 판</small>',
+      startBtn: '시작하기', rankBtn: '랭킹', back: '← 뒤로',
       bestHtml: n => '내 최고 기록 <b>' + n + '</b>점', noBest: '아직 기록이 없어요',
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
@@ -314,8 +328,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     },
     en: {
       docTitle: 'Brick Slam', titleHtml: 'Brick <em>Slam</em>',
-      tagline: '<b>Push bricks into the walls.</b> When a wall glows, tap it for <b>Fever</b>.',
-      start4: 'Play 4 × 4 <small>classic</small>', start5: 'Play 5 × 5 <small>bigger board</small>',
+      startBtn: 'Start', rankBtn: 'Ranking', back: '← Back',
       bestHtml: n => 'Your best <b>' + n + '</b>', noBest: 'No score yet',
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
@@ -348,11 +361,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
     document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
     document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
-    $('langKo').setAttribute('aria-pressed', l === 'ko'); $('langEn').setAttribute('aria-pressed', l === 'en');
+    $('langSw').setAttribute('aria-checked', l === 'en');
     langHooks.forEach(f => f());
   }
-  $('langKo').addEventListener('click', () => applyLang('ko'));
-  $('langEn').addEventListener('click', () => applyLang('en'));
+  $('langSw').addEventListener('click', () => applyLang(lang === 'ko' ? 'en' : 'ko'));
 
   let best = 0;
   try { best = +localStorage.getItem('brickpush-best') || 0; } catch (e) {}
@@ -703,13 +715,33 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     window.scrollTo(0, 0);
     reset();
   }
+  function showView(id) {
+    ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
+    window.scrollTo(0, 0);
+  }
   function goHome() {
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
     $('rankList').after($('nickRow'));
+    showView('titleView');
     showBest();
   }
+  let pickSize = 4;
+  try { pickSize = +localStorage.getItem('brickpush-size') === 5 ? 5 : 4; } catch (e) {}
+  function setSize(n) {
+    pickSize = n;
+    try { localStorage.setItem('brickpush-size', n); } catch (e) {}
+    $('size4').setAttribute('aria-pressed', n === 4); $('size5').setAttribute('aria-pressed', n === 5);
+  }
+  setSize(pickSize);
+  $('size4').addEventListener('click', () => setSize(4));
+  $('size5').addEventListener('click', () => setSize(5));
+  $('startBtn').addEventListener('click', () => { showView('howView'); $('okBtn').focus(); });
+  $('rankBtn').addEventListener('click', () => { showView('rank'); setTab(pickSize); });
+  $('howBack').addEventListener('click', () => showView('titleView'));
+  $('rankBack').addEventListener('click', () => showView('titleView'));
+  $('okBtn').addEventListener('click', () => start(pickSize));
 
   // ---------- shared ranking (Firebase Firestore) ----------
   // From Firebase console > Project settings > Your apps > Web app. These values are public by design.
@@ -814,8 +846,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
   })();
 
-  $('start4').addEventListener('click', () => start(4));
-  $('start5').addEventListener('click', () => start(5));
   $('retryBtn').addEventListener('click', () => start());
   $('menuBtn').addEventListener('click', goHome);
   $('backBtn').addEventListener('click', goHome);
