@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 랭킹: 누구나 읽고, 각자 자기 기록만 쓸 수 있어요.
+    match /scores/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick', 'best4', 'best5', 't4', 't5'])
+        && request.resource.data.nick is string
+        && request.resource.data.nick.size() <= 12
+        && validScore(request.resource.data, 'best4')
+        && validScore(request.resource.data, 'best5');
+      allow delete: if false;
+    }
+    function validScore(d, key) {
+      return !(key in d) || (d[key] is int && d[key] >= 0 && d[key] < 10000000);
+    }
+  }
+}

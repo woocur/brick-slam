@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15131f">
+<meta name="description" content="Brick Slam · 브릭 슬램. Push bricks into the walls, tap a glowing wall for Fever, and beat your friends on the ranking.">
+<meta property="og:title" content="Brick Slam · 브릭 슬램">
+<meta property="og:description" content="벽돌을 밀어서 벽에 쾅! 빛나는 벽을 눌러 피버. 친구들과 랭킹 겨루기.">
+<meta property="og:type" content="website">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2315131f'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='%23c4623a'/%3E%3Crect x='28' y='4' width='3' height='24' rx='1.5' fill='%23ffb547'/%3E%3C/svg%3E">
+<title>Brick Slam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+/* Layout: phone-first. A scrolling home (hero board, start buttons, how-to) and a fixed full-screen game view: HUD strip, square board framed by four charge bars. Deliberately single dark theme. */
+:root {
+  --ground: #15131f;
+  --board: #1e1b2d;
+  --line: #2c2843;
+  --brick: #c4623a;
+  --brick-hi: #e98d5f;
+  --brick-lo: #7f3a20;
+  --glow: #ffb547;
+  --fever: #ff4f8b;
+  --ink: #efe9f7;
+  --muted: #9a93b0;
+  --danger: #ff5a4e;
+  --display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--ground); color: var(--ink); font-family: var(--body);
+  margin: 0; overscroll-behavior: none; word-break: keep-all;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+body.playing { overflow: hidden; touch-action: none; }
+button { touch-action: manipulation; }
+
+/* ---------- home ---------- */
+.home {
+  max-width: 440px; margin-inline: auto; padding-inline: 20px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 24px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+  display: flex; flex-direction: column; gap: 28px; box-sizing: border-box;
+}
+.hero { display: flex; flex-direction: column; gap: 10px; }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; }
+.hero h1 em { font-style: normal; color: var(--glow); }
+.hero p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--muted); text-wrap: balance; }
+.hero p b { color: var(--ink); font-weight: 600; }
+
+.mini { --u: min(54px, 13vw); position: relative; width: calc(var(--u) * 4 + 52px); aspect-ratio: 1; max-width: 100%; align-self: center; }
+.mini .grid {
+  position: absolute; inset: 26px; background: var(--board); border-radius: 4px;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 25% 25%;
+}
+.mini .bar { position: absolute; background: var(--line); border-radius: 6px; }
+.mini .bar.t { top: 8px; left: 26px; right: 26px; height: 10px; }
+.mini .bar.b { bottom: 8px; left: 26px; right: 26px; height: 10px; }
+.mini .bar.l { left: 8px; top: 26px; bottom: 26px; width: 10px; }
+.mini .bar.r { right: 8px; top: 26px; bottom: 26px; width: 10px; overflow: visible; }
+.mini .bar.r::after {
+  content: ""; position: absolute; inset: 0; border-radius: 6px; background: var(--glow);
+  animation: charge 2.4s infinite;
+}
+.mini .bar.t::after { content: ""; position: absolute; left: 35%; right: 35%; top: 0; bottom: 0; border-radius: 6px; background: var(--glow); opacity: .5; }
+.mini .brick { position: absolute; width: calc(25% - 6px); aspect-ratio: 1; border-radius: 5px; background: var(--brick); box-shadow: inset 0 -5px 0 var(--brick-lo), inset 0 4px 0 -1px var(--brick-hi); }
+.mini .grid { overflow: hidden; }
+.mini .s1 { left: 3px; top: calc(25% + 3px); animation: slide 2.4s infinite cubic-bezier(.5, 0, .9, .6); }
+.mini .s2 { left: calc(50% + 3px); top: calc(75% + 3px); }
+.mini .s3 { left: calc(25% + 3px); top: 3px; }
+@keyframes slide {
+  0%, 25% { transform: translateX(0); opacity: 1; }
+  55% { transform: translateX(calc(300% + 18px)); opacity: 1; }
+  60%, 100% { transform: translateX(calc(300% + 18px)); opacity: 0; }
+}
+@keyframes charge {
+  0%, 54% { opacity: .35; transform: scaleY(.45); box-shadow: none; }
+  57% { opacity: 1; transform: scaleY(1); box-shadow: 0 0 22px 4px var(--glow); }
+  100% { opacity: .9; transform: scaleY(1); box-shadow: 0 0 12px 1px var(--glow); }
+}
+
+.play { display: flex; flex-direction: column; gap: 10px; }
+.btn {
+  font-family: var(--display); font-size: 22px; padding: 14px 0; border-radius: 10px; border: 0;
+  background: var(--glow); color: var(--ground); cursor: pointer; width: 100%;
+  display: flex; justify-content: center; align-items: baseline; gap: 8px;
+}
+.btn small { font-family: var(--body); font-size: 13px; opacity: .75; }
+.btn.alt { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.bestline { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bestline b { color: var(--ink); font-weight: 600; }
+
+.how h2 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0 0 12px; }
+.how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
+.how li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; counter-increment: step; }
+.how li::before {
+  content: counter(step); font-family: var(--display); font-size: 18px; width: 34px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center; background: var(--board); color: var(--glow); border: 1px solid var(--line);
+}
+.how li div { min-width: 0; font-size: 15px; line-height: 1.55; }
+.how li b { display: block; font-weight: 600; margin-bottom: 2px; }
+.how li span { color: var(--muted); }
+.how .end { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.how .end b { color: var(--danger); font-weight: 600; }
+
+/* ---------- game ---------- */
+.game {
+  position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;
+  padding-inline: 16px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  box-sizing: border-box; background: var(--ground);
+}
+.game > * { width: 100%; max-width: 640px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.back {
+  font-family: var(--body); font-size: 14px; color: var(--muted); background: transparent; border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 12px; cursor: pointer;
+}
+.back:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.hud { display: flex; gap: 16px; font-variant-numeric: tabular-nums; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.stat span { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+.stat b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
+#mult.on { color: var(--fever); }
+#count.warn { color: var(--danger); }
+.feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.feverbar i { display: block; height: 100%; width: 0; background: var(--fever); }
+.stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+canvas { display: block; touch-action: none; max-width: 100%; }
+.hint { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+.hint .keys { display: none; }
+@media (hover: hover) and (pointer: fine) { .hint .keys { display: inline; } }
+kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--ink); }
+.overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.card {
+  background: rgba(21, 19, 31, .94); border: 1px solid var(--line); border-radius: 12px;
+  padding: 22px; max-width: 320px; width: calc(100% - 32px); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.card h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0; text-wrap: balance; }
+.result { display: flex; gap: 24px; font-variant-numeric: tabular-nums; }
+.result div { display: flex; flex-direction: column; gap: 2px; }
+.result span { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+.result b { font-family: var(--display); font-weight: 400; font-size: 32px; }
+.newbest { color: var(--glow); font-size: 14px; margin: 0; }
+.rank h2 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0; }
+.rank { display: flex; flex-direction: column; gap: 12px; }
+.rank-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tabs { display: flex; gap: 4px; background: var(--board); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.tabs button {
+  font-family: var(--body); font-size: 13px; padding: 5px 10px; border: 0; border-radius: 6px; cursor: pointer;
+  background: transparent; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.tabs button[aria-pressed="true"] { background: var(--line); color: var(--ink); }
+.tabs button:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
+.board-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.board-list li {
+  display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+  padding: 10px 14px; font-variant-numeric: tabular-nums; border-top: 1px solid var(--line);
+}
+.board-list li:first-child { border-top: 0; }
+.board-list .pos { font-family: var(--display); font-size: 17px; color: var(--muted); }
+.board-list li:nth-child(1) .pos { color: var(--glow); }
+.board-list .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.board-list .me { background: var(--board); }
+.board-list .me .who::after { content: " · " attr(data-me); color: var(--glow); font-size: 13px; }
+.board-list .pts { font-family: var(--display); font-size: 18px; }
+.board-list .empty { display: block; color: var(--muted); font-size: 14px; text-align: center; padding: 18px 14px; }
+.nick { display: flex; gap: 8px; align-items: center; }
+.nick label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.nick input {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: var(--board);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; -webkit-user-select: text; user-select: text;
+}
+.nick input:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; border-color: transparent; }
+.rank-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.ranked { margin: 0; font-size: 14px; color: var(--ink); }
+.langbar { display: flex; justify-content: flex-end; }
+.lang { display: flex; gap: 4px; background: var(--board); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.lang button { font-family: var(--body); font-size: 13px; padding: 5px 10px; border: 0; border-radius: 6px; cursor: pointer; background: transparent; color: var(--muted); }
+.lang button[aria-pressed="true"] { background: var(--line); color: var(--ink); }
+.lang button:focus-visible { outline: 2px solid var(--glow); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .mini .s1, .mini .bar.r::after { animation: none; } }
+</style>
+</head>
+<body>
+
+<main class="home" id="home">
+  <div class="langbar">
+    <div class="lang" role="group" aria-label="Language">
+      <button id="langKo" lang="ko" aria-pressed="true">한국어</button>
+      <button id="langEn" lang="en" aria-pressed="false">English</button>
+    </div>
+  </div>
+  <section class="hero">
+    <h1 data-i18n-html="titleHtml">브릭 <em>슬램</em></h1>
+    <p data-i18n-html="tagline"></p>
+  </section>
+  <div class="mini" aria-hidden="true">
+    <div class="bar t"></div><div class="bar r"></div><div class="bar b"></div><div class="bar l"></div>
+    <div class="grid"><div class="brick s1"></div><div class="brick s2"></div><div class="brick s3"></div></div>
+  </div>
+  <section class="play">
+    <button class="btn" id="start4" data-i18n-html="start4"></button>
+    <button class="btn alt" id="start5" data-i18n-html="start5"></button>
+    <p class="bestline" id="bestLine"></p>
+  </section>
+  <section class="rank" id="rank">
+    <div class="rank-head">
+      <h2 data-i18n="ranking"></h2>
+      <div class="tabs" role="group" data-i18n-aria="boardSize">
+        <button id="tab4" aria-pressed="true">4 × 4</button>
+        <button id="tab5" aria-pressed="false">5 × 5</button>
+      </div>
+    </div>
+    <ol class="board-list" id="rankList"><li class="empty"></li></ol>
+    <div class="nick" id="nickRow" hidden>
+      <label for="nick" data-i18n="nickLabel"></label>
+      <input id="nick" maxlength="12" autocomplete="nickname" data-i18n-ph="nickPh">
+    </div>
+    <p class="rank-note" id="rankNote" hidden></p>
+  </section>
+  <section class="how">
+    <h2 data-i18n="howTitle"></h2>
+    <ol>
+      <li><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
+      <li><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
+      <li><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
+    </ol>
+    <p class="end" data-i18n-html="howEnd"></p>
+  </section>
+</main>
+
+<div class="game" id="game" hidden>
+  <div class="topbar">
+    <button class="back" id="backBtn" data-i18n="quit"></button>
+    <div class="hud">
+      <div class="stat"><span data-i18n="score"></span><b id="score">0</b></div>
+      <div class="stat"><span data-i18n="mult"></span><b id="mult">×1</b></div>
+      <div class="stat"><span data-i18n="bricks"></span><b id="count">0/16</b></div>
+      <div class="stat"><span data-i18n="best"></span><b id="best">0</b></div>
+    </div>
+  </div>
+  <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
+  <div class="stage" id="stage">
+    <canvas id="cv" data-i18n-aria="boardAria"></canvas>
+    <div class="overlay" id="overOv" hidden>
+      <div class="card">
+        <h2 data-i18n="overTitle"></h2>
+        <div class="result">
+          <div><span data-i18n="score"></span><b id="finalScore">0</b></div>
+          <div><span data-i18n="best"></span><b id="finalBest">0</b></div>
+        </div>
+        <p class="newbest" id="newBest" data-i18n="newBest" hidden></p>
+        <p class="ranked" id="ranked" hidden></p>
+        <button class="btn" id="retryBtn" data-i18n="retry"></button>
+        <button class="btn alt" id="menuBtn" data-i18n="home"></button>
+      </div>
+    </div>
+  </div>
+  <p class="hint"><span data-i18n="hint"></span><span class="keys"> · <span data-i18n="keyboard"></span> <kbd>←↑↓→</kbd> <kbd>F</kbd></span></p>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+  const css = getComputedStyle(document.documentElement);
+  const C = {};
+  ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
+
+  // 0 top, 1 right, 2 bottom, 3 left
+  const DIRS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
+  const CFG = { 4: { cap: 16, need: 6 }, 5: { cap: 25, need: 8 } };
+  const SLIDE_SPEED = 14;      // cells per second
+  const FEVER_MS = 8000, FEVER_EXTEND_MS = 5000;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let N = 4, S = 0, M = 0, B = 0, cell = 0;
+  let grid, blocks, moving, parts, pops, bars, score, mult, feverUntil, feverTotal, nextSpawn, interval, flash;
+  let over = true, selected = null, drag = null, last = performance.now(), hiddenAt = 0;
+  // ---------- language ----------
+  const I18N = {
+    ko: {
+      docTitle: '브릭 슬램', titleHtml: '브릭 <em>슬램</em>',
+      tagline: '벽돌을 <b>밀어서 벽에 쾅!</b> 벽이 빛나면 눌러서 <b>피버</b>.',
+      start4: '4 × 4 시작 <small>기본</small>', start5: '5 × 5 시작 <small>넓은 판</small>',
+      bestHtml: n => '내 최고 기록 <b>' + n + '</b>점', noBest: '아직 기록이 없어요',
+      ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
+      howTitle: '하는 법',
+      how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
+      how2t: '벽 충전', how2: '벽돌이 부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차면 바가 확 빛나요.',
+      how3t: '눌러서 피버', how3: '빛나는 바를 누르면 피버. 벽돌이 빨리 나오고 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
+      howEnd: '판이 벽돌로 <b>꽉 차면</b> 끝나요.',
+      quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
+      overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
+      hint: '벽돌을 쓸어서 밀기 · 빛나는 바를 눌러 피버', keyboard: '키보드',
+      rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
+      rankSoon: '랭킹은 곧 열려요', rankFail: '랭킹을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.',
+      rankEmpty: '아직 기록이 없어요. 첫 기록을 남겨 보세요.', noName: '이름 없음', me: '나',
+      readOnly: '보기 전용으로 열려 있어서 내 기록은 랭킹에 올라가지 않아요. 기록을 올리려면 만든 사람에게 편집 권한으로 초대해 달라고 하세요.',
+      quota: '랭킹 저장 공간이 가득 찼어요.', saveFail: '기록을 저장하지 못했어요. 인터넷 연결을 확인해 주세요.',
+      ranked: n => n + '×' + n + ' 랭킹에 새 기록을 올렸어요.'
+    },
+    en: {
+      docTitle: 'Brick Slam', titleHtml: 'Brick <em>Slam</em>',
+      tagline: '<b>Push bricks into the walls.</b> When a wall glows, tap it for <b>Fever</b>.',
+      start4: 'Play 4 × 4 <small>classic</small>', start5: 'Play 5 × 5 <small>bigger board</small>',
+      bestHtml: n => 'Your best <b>' + n + '</b>', noBest: 'No score yet',
+      ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
+      howTitle: 'How to play',
+      how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
+      how2t: 'Charge the walls', how2: 'Each slam fills that wall\'s bar with light. When it is full, the bar flashes.',
+      how3t: 'Tap for Fever', how3: 'Tap a glowing bar to start Fever: bricks come faster and points double. Tap another glowing bar during Fever to raise the multiplier.',
+      howEnd: 'The game ends when the board is <b>full</b>.',
+      quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
+      overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
+      hint: 'Swipe a brick to push · Tap a glowing bar for Fever', keyboard: 'Keys',
+      rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
+      rankSoon: 'Ranking opens soon', rankFail: 'Couldn\'t load the ranking. Refresh in a moment.',
+      rankEmpty: 'No scores yet. Be the first!', noName: 'No name', me: 'you',
+      readOnly: 'This page is view-only for you, so your scores won\'t be ranked. Ask the owner to invite you as an editor.',
+      quota: 'The ranking storage is full.', saveFail: 'Couldn\'t save your score. Check your connection.',
+      ranked: n => 'New score posted to the ' + n + '×' + n + ' ranking.'
+    }
+  };
+  let lang = 'ko';
+  try { lang = localStorage.getItem('brickpush-lang') || (/^ko/i.test(navigator.language || '') ? 'ko' : 'en'); } catch (e) {}
+  if (!I18N[lang]) lang = 'ko';
+  const t = (k, ...a) => { const v = I18N[lang][k]; return typeof v === 'function' ? v(...a) : v; };
+  const langHooks = [];
+  function applyLang(l) {
+    lang = l;
+    try { localStorage.setItem('brickpush-lang', l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.title = t('docTitle');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+    $('langKo').setAttribute('aria-pressed', l === 'ko'); $('langEn').setAttribute('aria-pressed', l === 'en');
+    langHooks.forEach(f => f());
+  }
+  $('langKo').addEventListener('click', () => applyLang('ko'));
+  $('langEn').addEventListener('click', () => applyLang('en'));
+
+  let best = 0;
+  try { best = +localStorage.getItem('brickpush-best') || 0; } catch (e) {}
+  function showBest() {
+    $('best').textContent = best.toLocaleString();
+    $('bestLine').innerHTML = best ? t('bestHtml', best.toLocaleString()) : t('noBest');
+  }
+  langHooks.push(showBest);
+  applyLang(lang);
+
+  function layout() {
+    const r = stage.getBoundingClientRect();
+    S = Math.max(200, Math.floor(Math.min(r.width, r.height)));
+    M = Math.max(30, Math.round(S * 0.085));
+    B = S - 2 * M;
+    cell = B / N;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = S * dpr; cv.height = S * dpr;
+    cv.style.width = cv.style.height = S + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function reset() {
+    grid = new Array(N * N).fill(null);
+    blocks = []; moving = []; parts = []; pops = [];
+    bars = [0, 1, 2, 3].map(() => ({ charge: 0, full: false, flash: 0, spots: [] }));
+    score = 0; mult = 1; feverUntil = 0; feverTotal = 1; flash = 0;
+    interval = 1400; nextSpawn = performance.now() + 600;
+    selected = null; drag = null; over = false;
+    layout(); hud();
+  }
+
+  const fever = now => now < feverUntil;
+
+  function hud() {
+    $('score').textContent = score.toLocaleString();
+    const m = $('mult'); m.textContent = '×' + mult; m.classList.toggle('on', mult > 1);
+    const c = $('count'); c.textContent = blocks.length + '/' + CFG[N].cap;
+    c.classList.toggle('warn', blocks.length >= CFG[N].cap * 0.8);
+  }
+
+  function spawn(now) {
+    const empty = [];
+    for (let i = 0; i < grid.length; i++) if (!grid[i]) empty.push(i);
+    if (!empty.length) return gameOver();
+    const i = empty[Math.floor(Math.random() * empty.length)];
+    const b = { x: i % N, y: Math.floor(i / N), born: now };
+    grid[i] = b; blocks.push(b);
+    if (blocks.length >= N * N) { hud(); return gameOver(); }
+    interval = Math.max(450, interval * 0.985);
+    hud();
+  }
+
+  function push(b, d) {
+    if (!blocks.includes(b)) return;
+    const { dx, dy } = DIRS[d];
+    // slide until the wall or the cell before another brick
+    let x = b.x, y = b.y;
+    while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; }
+    const toWall = !(x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N);
+    const sx = b.slide ? b.slide.fx : b.x, sy = b.slide ? b.slide.fy : b.y;
+    if (toWall) {
+      grid[b.y * N + b.x] = null;
+      blocks.splice(blocks.indexOf(b), 1);
+      moving.push({ fx: sx, fy: sy, d, group: { n: 0 } });
+      if (b === selected) selected = null;
+    } else if (x === b.x && y === b.y) {
+      b.bump = { d, t: 1 };   // blocked right away
+    } else {
+      grid[b.y * N + b.x] = null;
+      grid[y * N + x] = b;
+      b.x = x; b.y = y;
+      b.slide = { fx: sx, fy: sy, d };
+    }
+    hud();
+  }
+
+  function reached(m) {
+    return (m.d === 0 && m.fy <= 0) || (m.d === 2 && m.fy >= N - 1) ||
+           (m.d === 1 && m.fx >= N - 1) || (m.d === 3 && m.fx <= 0);
+  }
+
+  function hit(m) {
+    m.group.n++;
+    const pts = 10 * m.group.n * mult;
+    score += pts;
+    const bar = bars[m.d];
+    if (!bar.full) {
+      bar.charge++;
+      if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; }
+    }
+    // impact point on the wall
+    const cx = M + (m.fx + 0.5) * cell, cy = M + (m.fy + 0.5) * cell;
+    const ix = m.d === 1 ? S - M : m.d === 3 ? M : cx;
+    const iy = m.d === 0 ? M : m.d === 2 ? S - M : cy;
+    bar.spots.push({ pos: (m.d === 0 || m.d === 2) ? m.fx : m.fy, t: 1 });
+    const n = reduceMotion ? 3 : 10;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 160;
+      const { dx, dy } = DIRS[m.d];
+      parts.push({ x: ix, y: iy, vx: Math.cos(a) * sp - dx * 90, vy: Math.sin(a) * sp - dy * 90, life: 1, s: 2 + Math.random() * 3, c: Math.random() < .5 ? C.brick : C['brick-hi'] });
+    }
+    pops.push({ x: cx, y: cy, text: '+' + pts, life: 1, hot: mult > 1 || m.group.n > 1 });
+    hud();
+  }
+
+  function triggerFever(d) {
+    const bar = bars[d];
+    if (!bar.full) return;
+    const now = performance.now();
+    bar.full = false; bar.charge = 0; bar.flash = 0;
+    if (fever(now)) { mult += 1; feverUntil += FEVER_EXTEND_MS; }
+    else { mult = 2; feverUntil = now + FEVER_MS; }
+    feverTotal = feverUntil - now;
+    flash = 1;
+    hud();
+  }
+
+  function gameOver() {
+    over = true; drag = null;
+    const isBest = score > best;
+    if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
+    showBest();
+    $('finalScore').textContent = score.toLocaleString();
+    $('finalBest').textContent = best.toLocaleString();
+    $('newBest').hidden = !isBest || score === 0;
+    $('overOv').hidden = false;
+    submitScore(N, score);
+    $('retryBtn').focus();
+  }
+
+  // ---------- input ----------
+  function pt(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function barAt(p) {
+    const inX = p.x > M && p.x < S - M, inY = p.y > M && p.y < S - M;
+    if (p.y < M && inX) return 0;
+    if (p.x > S - M && inY) return 1;
+    if (p.y > S - M && inX) return 2;
+    if (p.x < M && inY) return 3;
+    return -1;
+  }
+  function blockNear(p) {
+    const gx = (p.x - M) / cell, gy = (p.y - M) / cell;
+    const exact = grid[Math.floor(gy) * N + Math.floor(gx)];
+    if (gx >= 0 && gy >= 0 && gx < N && gy < N && exact) return exact;
+    let bestB = null, bd = 1.1;
+    for (const b of blocks) {
+      const d = Math.hypot(b.x + 0.5 - gx, b.y + 0.5 - gy);
+      if (d < bd) { bd = d; bestB = b; }
+    }
+    return bestB;
+  }
+  cv.addEventListener('pointerdown', e => {
+    if (over) return;
+    const p = pt(e);
+    const bi = barAt(p);
+    if (bi >= 0) { triggerFever(bi); return; }
+    const b = blockNear(p);
+    if (!b) return;
+    selected = b;
+    drag = { b, x0: p.x, y0: p.y };
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!drag || over) return;
+    const p = pt(e), dx = p.x - drag.x0, dy = p.y - drag.y0;
+    if (Math.hypot(dx, dy) < Math.max(10, Math.min(28, cell * 0.25))) return;
+    const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+    push(drag.b, d);
+    drag = null;
+  });
+  const endDrag = () => { drag = null; };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  window.addEventListener('keydown', e => {
+    if (over) return;
+    const map = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
+    if (e.key in map) {
+      e.preventDefault();
+      const target = (selected && blocks.includes(selected)) ? selected : blocks[0];
+      if (target) push(target, map[e.key]);
+    } else if (e.key === 'f' || e.key === 'F' || e.key === ' ') {
+      e.preventDefault();
+      const d = bars.findIndex(b => b.full);
+      if (d >= 0) triggerFever(d);
+    }
+  });
+
+  // ---------- drawing ----------
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  }
+
+  function drawBrick(x, y, s, sel) {
+    const pad = cell * 0.06, size = (cell - pad * 2) * s;
+    const px = M + x * cell + (cell - size) / 2, py = M + y * cell + (cell - size) / 2;
+    const r = Math.min(10, size * 0.1);
+    ctx.fillStyle = C['brick-lo']; rr(px, py, size, size, r); ctx.fill();
+    ctx.fillStyle = C.brick; rr(px, py, size, size * 0.86, r); ctx.fill();
+    if (size > 10) {
+      ctx.fillStyle = C['brick-hi'];
+      ctx.fillRect(px + size * 0.15, py + size * 0.12, size * 0.7, Math.max(1, size * 0.08));
+      ctx.fillStyle = C['brick-lo'];
+      ctx.fillRect(px + size * 0.08, py + size * 0.46, size * 0.84, Math.max(1, size * 0.05));
+      ctx.fillRect(px + size * 0.48, py + size * 0.46, Math.max(1, size * 0.05), size * 0.34);
+    }
+    if (sel) { ctx.strokeStyle = C.ink; ctx.lineWidth = 3; rr(px - 3, py - 3, size + 6, size + 6, r + 3); ctx.stroke(); }
+  }
+
+  function barRect(d) {
+    const t = M * 0.42, o = (M - t) / 2;
+    if (d === 0) return [M, o, B, t];
+    if (d === 1) return [S - M + o, M, t, B];
+    if (d === 2) return [M, S - M + o, B, t];
+    return [o, M, t, B];
+  }
+
+  function drawBar(d, now, isFever) {
+    const bar = bars[d], [x, y, w, h] = barRect(d), horiz = d === 0 || d === 2;
+    const r = Math.min(w, h) / 2;
+    ctx.fillStyle = C.line; rr(x, y, w, h, r); ctx.fill();
+    if (isFever) { ctx.strokeStyle = C.fever; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.5; rr(x, y, w, h, r); ctx.stroke(); ctx.globalAlpha = 1; }
+    const frac = bar.full ? 1 : bar.charge / CFG[N].need;
+    if (frac > 0) {
+      const len = (horiz ? w : h) * frac;
+      const fx = horiz ? x + (w - len) / 2 : x, fy = horiz ? y : y + (h - len) / 2;
+      const fw = horiz ? len : w, fh = horiz ? h : len;
+      ctx.save();
+      if (bar.full) {
+        const pulse = reduceMotion ? 0.7 : 0.5 + 0.5 * Math.sin(now / 140);
+        ctx.shadowColor = C.glow; ctx.shadowBlur = 18 + 22 * pulse + 40 * bar.flash;
+        ctx.fillStyle = C.glow; rr(fx, fy, fw, fh, r); ctx.fill();
+        ctx.shadowBlur = 0; ctx.globalAlpha = 0.55 + 0.45 * pulse;
+        ctx.fillStyle = C.ink;
+        const core = Math.min(w, h) * 0.3;
+        if (horiz) rr(fx + 4, fy + (fh - core) / 2, fw - 8, core, core / 2); else rr(fx + (fw - core) / 2, fy + 4, core, fh - 8, core / 2);
+        ctx.fill();
+      } else {
+        ctx.globalAlpha = 0.3 + 0.6 * frac;
+        ctx.shadowColor = C.glow; ctx.shadowBlur = 4 + 12 * frac;
+        ctx.fillStyle = C.glow; rr(fx, fy, fw, fh, r); ctx.fill();
+      }
+      ctx.restore();
+    }
+    for (const s of bar.spots) {
+      const c = M + (s.pos + 0.5) * cell;
+      ctx.save(); ctx.globalAlpha = s.t; ctx.fillStyle = C.ink; ctx.shadowColor = C.glow; ctx.shadowBlur = 12;
+      const L = cell * 0.6;
+      if (horiz) rr(c - L / 2, y, L, h, r); else rr(x, c - L / 2, w, L, r);
+      ctx.fill(); ctx.restore();
+    }
+  }
+
+  function draw(now) {
+    ctx.clearRect(0, 0, S, S);
+    const isFever = !over && fever(now);
+    const cap = CFG[N].cap;
+    // board
+    ctx.fillStyle = C.board; rr(M, M, B, B, 4); ctx.fill();
+    if (isFever) {
+      ctx.save(); ctx.globalAlpha = 0.07 + (reduceMotion ? 0 : 0.04 * Math.sin(now / 200)); ctx.fillStyle = C.fever; rr(M, M, B, B, 4); ctx.fill(); ctx.restore();
+    }
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    for (let i = 1; i < N; i++) {
+      const v = Math.round(M + i * cell) + 0.5;
+      ctx.moveTo(v, M); ctx.lineTo(v, S - M); ctx.moveTo(M, v); ctx.lineTo(S - M, v);
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+    // danger outline
+    if (blocks && blocks.length >= cap * 0.8 && !over) {
+      ctx.save(); ctx.strokeStyle = C.danger; ctx.lineWidth = 2;
+      ctx.globalAlpha = reduceMotion ? 0.7 : 0.4 + 0.4 * Math.sin(now / 120);
+      rr(M + 1, M + 1, B - 2, B - 2, 4); ctx.stroke(); ctx.restore();
+    }
+    for (let d = 0; d < 4; d++) drawBar(d, now, isFever);
+    for (const b of blocks) {
+      const t = Math.min(1, (now - b.born) / 180);
+      let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
+      if (b.bump && !reduceMotion) { const k = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * k; by += DIRS[b.bump.d].dy * k; }
+      drawBrick(bx, by, reduceMotion ? 1 : 1 - Math.pow(1 - t, 3), b === selected);
+    }
+    for (const m of moving) drawBrick(m.fx, m.fy, 1, false);
+    for (const p of parts) {
+      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const p of pops) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.font = `${Math.min(28, Math.max(12, cell * 0.3))}px ${css.getPropertyValue('--display')}`;
+      ctx.fillStyle = p.hot ? C.fever : C.ink;
+      ctx.fillText(p.text, p.x, p.y - (1 - p.life) * Math.min(60, cell * 0.6));
+    }
+    ctx.globalAlpha = 1;
+    if (flash > 0 && !reduceMotion) {
+      ctx.save(); ctx.globalAlpha = flash * 0.35; ctx.fillStyle = C.fever; ctx.fillRect(0, 0, S, S); ctx.restore();
+    }
+  }
+
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!over) {
+      if (now >= nextSpawn) {
+        spawn(now);
+        nextSpawn = now + interval * (fever(now) ? 0.45 : 1);
+      }
+      if (mult > 1 && !fever(now)) { mult = 1; hud(); }
+      const step = SLIDE_SPEED * dt;
+      for (let i = moving.length - 1; i >= 0; i--) {
+        const m = moving[i], { dx, dy } = DIRS[m.d];
+        m.fx = Math.min(N - 1, Math.max(0, m.fx + dx * step));
+        m.fy = Math.min(N - 1, Math.max(0, m.fy + dy * step));
+        if (reached(m)) { moving.splice(i, 1); hit(m); }
+      }
+      for (const b of blocks) {
+        if (b.slide) {
+          const { dx, dy } = DIRS[b.slide.d];
+          b.slide.fx += dx * step; b.slide.fy += dy * step;
+          if ((b.slide.fx - b.x) * dx + (b.slide.fy - b.y) * dy >= 0) b.slide = null;
+        }
+        if (b.bump && (b.bump.t -= dt * 5) <= 0) b.bump = null;
+      }
+      $('feverfill').style.width = fever(now) ? ((feverUntil - now) / feverTotal * 100) + '%' : '0';
+    }
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.94; p.vy *= 0.94; p.life -= dt * 1.8;
+      if (p.life <= 0) parts.splice(i, 1);
+    }
+    for (let i = pops.length - 1; i >= 0; i--) { pops[i].life -= dt * 1.4; if (pops[i].life <= 0) pops.splice(i, 1); }
+    if (bars) for (const bar of bars) {
+      bar.flash = Math.max(0, bar.flash - dt * 1.5);
+      for (let i = bar.spots.length - 1; i >= 0; i--) { bar.spots[i].t -= dt * 3; if (bar.spots[i].t <= 0) bar.spots.splice(i, 1); }
+    }
+    flash = Math.max(0, (flash || 0) - dt * 2.5);
+    if (grid) draw(now);
+    requestAnimationFrame(tick);
+  }
+
+  function start(n) {
+    if (n) N = n;
+    $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
+    document.body.classList.add('playing');
+    window.scrollTo(0, 0);
+    reset();
+  }
+  function goHome() {
+    over = true; drag = null;
+    $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
+    document.body.classList.remove('playing');
+    showBest();
+  }
+
+  // ---------- shared ranking (Firebase Firestore) ----------
+  // From Firebase console > Project settings > Your apps > Web app. These values are public by design.
+  const FIREBASE_CONFIG = null;
+  const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  let fs = null, api = null, myId = null, myData = null, rankTab = 4, rankFailed = false;
+  const boards = { 4: null, 5: null };
+  const MAX_NICK = 12;
+  let nickLocal = '';
+  try { nickLocal = localStorage.getItem('brickpush-nick') || ''; } catch (e) {}
+  $('nick').value = nickLocal;
+
+  let noteKey = '';
+  function rankNote(key) { noteKey = key; const n = $('rankNote'); n.textContent = key ? t(key) : ''; n.hidden = !key; }
+  function emptyRow(key) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = t(key); $('rankList').append(li); }
+  function renderRank() {
+    const list = $('rankList'), rows = boards[rankTab];
+    list.textContent = '';
+    if (!FIREBASE_CONFIG) return emptyRow('rankSoon');
+    if (rankFailed && !rows) return emptyRow('rankFail');
+    if (!rows) return emptyRow('rankLoading');
+    if (!rows.length) return emptyRow('rankEmpty');
+    rows.forEach((r, i) => {
+      const li = document.createElement('li');
+      if (r.id === myId) li.className = 'me';
+      li.dataset.me = t('me');
+      const pos = document.createElement('span'); pos.className = 'pos'; pos.textContent = i + 1;
+      const who = document.createElement('span'); who.className = 'who'; who.textContent = String(r.nick || t('noName')).slice(0, MAX_NICK);
+      const pts = document.createElement('span'); pts.className = 'pts'; pts.textContent = Number(r['best' + rankTab] || 0).toLocaleString();
+      li.append(pos, who, pts); list.append(li);
+    });
+  }
+  langHooks.push(() => { rankNote(noteKey); renderRank(); });
+  function setTab(n) {
+    rankTab = n;
+    $('tab4').setAttribute('aria-pressed', n === 4); $('tab5').setAttribute('aria-pressed', n === 5);
+    renderRank();
+  }
+  $('tab4').addEventListener('click', () => setTab(4));
+  $('tab5').addEventListener('click', () => setTab(5));
+
+  let writing = Promise.resolve(true);
+  function writeMine(patch) {
+    if (!fs || !myId) return Promise.resolve(false);
+    const body = Object.assign({}, myData || {}, patch);
+    writing = writing.then(() => api.setDoc(api.doc(fs, 'scores', myId), body)).then(() => { myData = body; rankNote(''); return true; }, () => {
+      rankNote('saveFail');
+      return false;
+    });
+    return writing;
+  }
+  function currentNick() { return ($('nick').value || '').trim().slice(0, MAX_NICK); }
+  $('nick').addEventListener('change', () => {
+    const nick = currentNick();
+    try { localStorage.setItem('brickpush-nick', nick); } catch (e) {}
+    if (myData && (myData.best4 || myData.best5) && myData.nick !== nick) writeMine({ nick });
+  });
+  $('nick').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+  async function submitScore(n, pts) {
+    const el = $('ranked'); el.hidden = true;
+    if (!fs || !myId || pts <= 0) return;
+    const prev = Number((myData && myData['best' + n]) || 0);
+    if (pts <= prev) return;
+    const ok = await writeMine({ nick: currentNick(), ['best' + n]: Math.floor(pts), ['t' + n]: Date.now() });
+    if (ok) { el.textContent = t('ranked', n); el.hidden = false; }
+  }
+
+  (async () => {
+    renderRank();
+    if (!FIREBASE_CONFIG) return;
+    try {
+      const [appMod, authMod, fsMod] = await Promise.all([
+        import(FB + 'firebase-app.js'), import(FB + 'firebase-auth.js'), import(FB + 'firebase-firestore.js')
+      ]);
+      const app = appMod.initializeApp(FIREBASE_CONFIG);
+      api = fsMod; fs = fsMod.getFirestore(app);
+      for (const n of [4, 5]) {
+        const q = fsMod.query(fsMod.collection(fs, 'scores'), fsMod.orderBy('best' + n, 'desc'), fsMod.limit(10));
+        fsMod.onSnapshot(q, snap => {
+          boards[n] = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(r => Number(r['best' + n]) > 0);
+          if (n === rankTab) renderRank();
+        }, () => { rankFailed = true; if (n === rankTab) renderRank(); });
+      }
+      const auth = authMod.getAuth(app);
+      const cred = auth.currentUser ? { user: auth.currentUser } : await authMod.signInAnonymously(auth);
+      myId = cred.user.uid;
+      $('nickRow').hidden = false;
+      const mine = await fsMod.getDoc(fsMod.doc(fs, 'scores', myId));
+      myData = mine.exists() ? mine.data() : null;
+      if (myData && myData.nick && !$('nick').value) $('nick').value = myData.nick;
+      renderRank();
+    } catch (e) {
+      rankFailed = true; fs = null; renderRank();
+    }
+  })();
+
+  $('start4').addEventListener('click', () => start(4));
+  $('start5').addEventListener('click', () => start(5));
+  $('retryBtn').addEventListener('click', () => start());
+  $('menuBtn').addEventListener('click', goHome);
+  $('backBtn').addEventListener('click', goHome);
+
+  document.addEventListener('visibilitychange', () => {
+    const now = performance.now();
+    if (document.hidden) hiddenAt = now;
+    else if (hiddenAt && !over) { const gap = now - hiddenAt; nextSpawn += gap; if (feverUntil > hiddenAt) feverUntil += gap; hiddenAt = 0; }
+  });
+  window.addEventListener('resize', () => { if (grid) layout(); });
+
+  reset(); over = true;   // empty state until a game starts
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
