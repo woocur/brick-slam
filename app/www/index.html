@@ -160,6 +160,19 @@ button { touch-action: manipulation; }
   border-radius: 8px; padding: 8px 12px; cursor: pointer;
 }
 .back:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.snd {
+  display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); color: var(--muted);
+}
+.snd svg { width: 20px; height: 20px; }
+.snd .off { display: none; }
+.snd[aria-pressed="false"] .on { display: none; }
+.snd[aria-pressed="false"] .off { display: block; }
+.snd:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.topleft { display: flex; gap: 8px; align-items: center; }
+.titlerow { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
+.titlerow .langsw { margin-top: 0; }
+.titlerow .snd { width: 44px; height: 44px; border-radius: 999px; background: var(--board); }
 .hud { display: flex; gap: 16px; font-variant-numeric: tabular-nums; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .stat span { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
@@ -230,9 +243,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <div class="play">
       <button class="btn" id="startBtn" data-i18n="startBtn"></button>
       <button class="btn alt" id="rankBtn" data-i18n="rankBtn"></button>
-      <button class="langsw" id="langSw" role="switch" aria-checked="false" aria-label="Language / 언어">
-        <span lang="ko">한국어</span><span lang="en">English</span><i aria-hidden="true"></i>
-      </button>
+      <div class="titlerow">
+        <button class="langsw" id="langSw" role="switch" aria-checked="false" aria-label="Language / 언어">
+          <span lang="ko">한국어</span><span lang="en">English</span><i aria-hidden="true"></i>
+        </button>
+        <button class="snd" id="sndTitle" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
+      </div>
       <p class="bestline" id="bestLine"></p>
     </div>
   </section>
@@ -276,7 +292,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
 <div class="game" id="game" hidden>
   <div class="topbar">
-    <button class="back" id="backBtn" data-i18n="quit"></button>
+    <div class="topleft">
+      <button class="back" id="backBtn" data-i18n="quit"></button>
+      <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
+    </div>
     <div class="hud">
       <div class="stat"><span data-i18n="score"></span><b id="score">0</b></div>
       <div class="stat"><span data-i18n="mult"></span><b id="mult">×1</b></div>
@@ -347,7 +366,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // ---------- language ----------
   const I18N = {
     ko: {
-      docTitle: '브릭 슬램', titleHtml: '브릭 <em>슬램</em>',
+      docTitle: '브릭 슬램', titleHtml: '브릭 <em>슬램</em>', sound: '소리',
       startBtn: '시작하기', rankBtn: '랭킹', back: '← 뒤로',
       bestHtml: n => '내 최고 기록 <b>' + n + '</b>점', noBest: '아직 기록이 없어요',
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
@@ -367,7 +386,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranked: n => n + '×' + n + ' 랭킹에 새 기록을 올렸어요.'
     },
     en: {
-      docTitle: 'Brick Slam', titleHtml: 'Brick <em>Slam</em>',
+      docTitle: 'Brick Slam', titleHtml: 'Brick <em>Slam</em>', sound: 'Sound',
       startBtn: 'Start', rankBtn: 'Ranking', back: '← Back',
       bestHtml: n => 'Your best <b>' + n + '</b>', noBest: 'No score yet',
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
@@ -413,6 +432,96 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('bestLine').innerHTML = best ? t('bestHtml', best.toLocaleString()) : t('noBest');
   }
   langHooks.push(showBest);
+
+  // ---------- sound (Web Audio, synthesized) ----------
+  const sfx = (() => {
+    let ac = null, out = null, noiseBuf = null, on = true, ext = false;
+    try { on = localStorage.getItem('brickpush-sound') !== 'off'; } catch (e) {}
+    function ctx() {
+      if (!ac) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ac = new AC();
+        out = ac.createGain(); out.gain.value = 0.9; out.connect(ac.destination);
+        noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ac.state === 'suspended') ac.resume();
+      return ac;
+    }
+    const live = () => on && !ext && ctx();
+    function tone(f, t0, dur, { type = 'sine', vol = 0.3, to = 0, attack = 0.004 } = {}) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t0);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    function noise(t0, dur, { vol = 0.3, freq = 1200, to = 0, q = 0.8, type = 'bandpass' } = {}) {
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t0);
+      if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(f); f.connect(g); g.connect(out); src.start(t0); src.stop(t0 + dur + 0.02);
+    }
+    // wall notes: top, right, bottom, left (a pentatonic spread so hits sound good together)
+    const WALL = [523.25, 659.25, 392, 440];
+    const api = {
+      get on() { return on; },
+      set(v) { on = v; try { localStorage.setItem('brickpush-sound', v ? 'on' : 'off'); } catch (e) {} if (v) ctx(); api.onchange && api.onchange(); },
+      external(m) { ext = !!m; },     // platform mute (CrazyGames settings, ads)
+      unlock() { if (on && !ext) ctx(); },
+      spawn(load) {                   // load 0..1: how full the board is
+        if (!live()) return; const t = ac.currentTime;
+        tone(700 + load * 500, t, 0.07, { type: 'triangle', vol: 0.08 + load * 0.06 });
+      },
+      slide() { if (!live()) return; noise(ac.currentTime, 0.12, { vol: 0.12, freq: 600, to: 2400, q: 1.2 }); },
+      bump() {
+        if (!live()) return; const t = ac.currentTime;
+        tone(140, t, 0.09, { vol: 0.28, to: 90 }); noise(t, 0.05, { vol: 0.08, freq: 400, type: 'lowpass' });
+      },
+      slam(d, combo, hot) {
+        if (!live()) return; const t = ac.currentTime;
+        tone(170, t, 0.18, { vol: 0.45, to: 50 });
+        noise(t, 0.09, { vol: 0.35, freq: 1800, to: 300, q: 0.7 });
+        const f = WALL[d] * Math.pow(2, Math.min(combo - 1, 6) / 12) * (hot ? 2 : 1);
+        tone(f, t + 0.01, 0.22, { type: 'triangle', vol: 0.16 });
+      },
+      charged() {
+        if (!live()) return; const t = ac.currentTime;
+        tone(988, t, 0.25, { type: 'sine', vol: 0.18 }); tone(1319, t + 0.08, 0.35, { type: 'sine', vol: 0.18 });
+      },
+      fever(level) {
+        if (!live()) return; const t = ac.currentTime, base = 392 * Math.pow(2, (level - 2) * 2 / 12);
+        [1, 1.25, 1.5, 2, 2.5].forEach((k, i) => tone(base * k, t + i * 0.06, 0.18, { type: 'square', vol: 0.07 }));
+        noise(t, 0.4, { vol: 0.1, freq: 800, to: 6000, q: 0.6 });
+      },
+      feverEnd() {
+        if (!live()) return; const t = ac.currentTime;
+        tone(784, t, 0.3, { type: 'triangle', vol: 0.12, to: 392 });
+      },
+      over(isBest) {
+        if (!live()) return; const t = ac.currentTime;
+        if (isBest) [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, t + i * 0.1, 0.3, { type: 'triangle', vol: 0.18 }));
+        else [392, 329.63, 261.63].forEach((f, i) => tone(f, t + i * 0.14, 0.32, { type: 'triangle', vol: 0.18 }));
+      },
+      tap() { if (!live()) return; tone(880, ac.currentTime, 0.04, { type: 'sine', vol: 0.06 }); }
+    };
+    return api;
+  })();
+  function showSound() {
+    ['sndTitle', 'sndGame'].forEach(id => $(id).setAttribute('aria-pressed', sfx.on));
+  }
+  ['sndTitle', 'sndGame'].forEach(id => $(id).addEventListener('click', () => { sfx.set(!sfx.on); sfx.tap(); }));
+  sfx.onchange = showSound;
+  showSound();
+  // browsers only allow audio after a user gesture
+  window.addEventListener('pointerdown', () => sfx.unlock(), { passive: true });
+  window.addEventListener('keydown', () => sfx.unlock());
+  document.addEventListener('click', e => { if (e.target.closest('.btn, .back, .tabs button, .langsw')) sfx.tap(); });
   applyLang(lang);
 
   function layout() {
@@ -454,6 +563,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const b = { x: i % N, y: Math.floor(i / N), born: now };
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
+    sfx.spawn(blocks.length / (N * N));
     interval = Math.max(450, interval * 0.985);
     hud();
   }
@@ -471,13 +581,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       blocks.splice(blocks.indexOf(b), 1);
       moving.push({ fx: sx, fy: sy, d, group: { n: 0 } });
       if (b === selected) selected = null;
+      sfx.slide();
     } else if (x === b.x && y === b.y) {
       b.bump = { d, t: 1 };   // blocked right away
+      sfx.bump();
     } else {
       grid[b.y * N + b.x] = null;
       grid[y * N + x] = b;
       b.x = x; b.y = y;
       b.slide = { fx: sx, fy: sy, d };
+      sfx.slide();
     }
     hud();
   }
@@ -494,8 +607,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const bar = bars[m.d];
     if (!bar.full) {
       bar.charge++;
-      if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; }
+      if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; sfx.charged(); }
     }
+    sfx.slam(m.d, m.group.n, mult > 1);
     // impact point on the wall
     const cx = M + (m.fx + 0.5) * cell, cy = M + (m.fy + 0.5) * cell;
     const ix = m.d === 1 ? S - M : m.d === 3 ? M : cx;
@@ -520,6 +634,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     else { mult = 2; feverUntil = now + FEVER_MS; }
     feverTotal = feverUntil - now;
     flash = 1;
+    sfx.fever(mult);
     hud();
   }
 
@@ -527,6 +642,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     over = true; drag = null;
     hooks.gameStop();
     const isBest = score > best;
+    sfx.over(isBest && score > 0);
     if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
     showBest();
     $('finalScore').textContent = score.toLocaleString();
@@ -717,7 +833,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         spawn(now);
         nextSpawn = now + interval * (fever(now) ? 0.45 : 1);
       }
-      if (mult > 1 && !fever(now)) { mult = 1; hud(); }
+      if (mult > 1 && !fever(now)) { mult = 1; hud(); sfx.feverEnd(); }
       const step = SLIDE_SPEED * dt;
       for (let i = moving.length - 1; i >= 0; i--) {
         const m = moving[i], { dx, dy } = DIRS[m.d];
@@ -750,7 +866,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
 
   // platform hooks: no-ops here; store builds (CrazyGames, Android app) set window.BrickHooks before this script
-  const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); } }, window.BrickHooks || {});
+  const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); }, audio() {} }, window.BrickHooks || {});
+  hooks.audio(sfx);   // lets a platform mute the game (CrazyGames settings, ads)
   function play(n) { hooks.beforePlay(() => start(n)); }
   function start(n) {
     if (n) N = n;
