@@ -1,0 +1,7 @@
+{
+  "appId": "io.github.woocur.brickslam",
+  "appName": "Brick Slam",
+  "webDir": "www",
+  "backgroundColor": "#15131f",
+  "android": { "backgroundColor": "#15131f" }
+}

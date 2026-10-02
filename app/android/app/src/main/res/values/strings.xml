@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Brick Slam</string>
+    <string name="title_activity_main">Brick Slam</string>
+    <string name="package_name">io.github.woocur.brickslam</string>
+    <string name="custom_url_scheme">io.github.woocur.brickslam</string>
+</resources>
