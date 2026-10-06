@@ -42,7 +42,8 @@
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
-  background: var(--ground); color: var(--ink); font-family: var(--body);
+  background: radial-gradient(120% 70% at 50% -10%, #2b2146 0%, rgba(43, 33, 70, 0) 60%) fixed, var(--ground);
+  color: var(--ink); font-family: var(--body);
   margin: 0; overscroll-behavior: none; word-break: keep-all;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
@@ -73,9 +74,11 @@ button { touch-action: manipulation; }
 @media (min-width: 720px) and (max-height: 760px) {
   .home { max-width: 760px; }
   .title .play, .sizepick, #okBtn { width: 100%; max-width: 420px; align-self: center; }
-  .how ol { grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .how li { grid-template-columns: 1fr; gap: 8px; }
-  .how li div { font-size: 14px; }
+  .how ol { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .how li { grid-template-columns: 1fr; gap: 6px; }
+  .how li div { font-size: 13px; line-height: 1.45; }
+  .how .kinds { gap: 2px; }
+  .how .kinds span { font-size: 12px; }
 }
 .langsw {
   position: relative; display: grid; grid-template-columns: 1fr 1fr; align-self: center; width: 220px;
@@ -123,12 +126,15 @@ button { touch-action: manipulation; }
 
 .play { display: flex; flex-direction: column; gap: 10px; }
 .btn {
-  font-family: var(--display); font-size: 22px; padding: 14px 0; border-radius: 10px; border: 0;
-  background: var(--glow); color: var(--ground); cursor: pointer; width: 100%;
+  font-family: var(--display); font-size: 22px; padding: 14px 0; border-radius: 12px; border: 0;
+  background: linear-gradient(180deg, #ffc76a, var(--glow) 55%, #f59f2c); color: var(--ground); cursor: pointer; width: 100%;
   display: flex; justify-content: center; align-items: baseline; gap: 8px;
+  box-shadow: 0 4px 0 #b06a1c, 0 12px 28px -10px rgba(255, 181, 71, .6); transition: transform .08s, box-shadow .08s;
 }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #b06a1c, 0 6px 16px -10px rgba(255, 181, 71, .6); }
 .btn small { font-family: var(--body); font-size: 13px; opacity: .75; }
-.btn.alt { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.alt { background: linear-gradient(180deg, #252137, #1c192b); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 4px 0 #0e0c16; }
+.btn.alt:active { box-shadow: 0 1px 0 #0e0c16; }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .bestline { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bestline b { color: var(--ink); font-weight: 600; }
@@ -138,12 +144,19 @@ button { touch-action: manipulation; }
 .how ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
 .how li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; counter-increment: step; }
 .how li::before {
-  content: counter(step); font-family: var(--display); font-size: 18px; width: 34px; height: 34px; border-radius: 8px;
-  display: grid; place-items: center; background: var(--board); color: var(--glow); border: 1px solid var(--line);
+  content: counter(step); font-family: var(--display); font-size: 18px; width: 34px; height: 34px; border-radius: 9px;
+  display: grid; place-items: center; background: linear-gradient(180deg, #e98d5f, var(--brick)); color: #fff4e8;
+  box-shadow: inset 0 -4px 0 var(--brick-lo);
 }
+.how .kinds { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; }
+.how .kinds span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
+.how .kinds i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.how .k-gold { background: #f2b632; } .how .k-stone { background: #8a8799; } .how .k-bomb { background: #3a3550; box-shadow: inset 0 0 0 3px #ff5a4e; }
+.how .k-rain { background: linear-gradient(135deg, #ff5a7a, #ffcf4a, #4ae08a, #4ab0ff, #b36bff); }
 .how li div { min-width: 0; font-size: 15px; line-height: 1.55; }
 .how li b { display: block; font-weight: 600; margin-bottom: 2px; }
 .how li span { color: var(--muted); }
+.how li em { font-style: normal; }
 .how .end { margin: 0; font-size: 14px; color: var(--muted); }
 .how .end b { color: var(--danger); font-weight: 600; }
 
@@ -152,8 +165,14 @@ button { touch-action: manipulation; }
   position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;
   padding-inline: 16px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  box-sizing: border-box; background: var(--ground);
+  box-sizing: border-box; background: radial-gradient(90% 55% at 50% 50%, #241d3a 0%, var(--ground) 72%);
+  transition: background-color .4s;
 }
+.game::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .5s;
+  background: radial-gradient(90% 60% at 50% 50%, rgba(255, 79, 139, .22) 0%, rgba(255, 79, 139, 0) 70%);
+}
+.game.fever::before { opacity: 1; }
 .game > * { width: 100%; max-width: 640px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .back {
@@ -180,6 +199,21 @@ button { touch-action: manipulation; }
 .stat b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
 #mult.on { color: var(--fever); }
 #count.warn { color: var(--danger); }
+@media (max-width: 430px) {
+  .topbar { gap: 8px; }
+  .topleft { gap: 6px; }
+  .topbar .back { padding: 7px 9px; font-size: 13px; }
+  .topbar .snd { width: 34px; height: 34px; }
+  .hud { gap: 10px; }
+  .stat b { font-size: 18px; }
+  .stat span { font-size: 10px; }
+}
+.lvrow { display: flex; align-items: center; gap: 10px; }
+.lvrow b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--glow); min-width: 54px; }
+.lvbar { flex: 1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.lvbar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #f59f2c, var(--glow)); transition: width .25s; }
+.lvrow .combo { font-family: var(--display); font-size: 16px; color: var(--fever); min-width: 76px; text-align: right; opacity: 0; transition: opacity .2s; }
+.lvrow .combo.on { opacity: 1; }
 .feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .feverbar i { display: block; height: 100%; width: 0; background: var(--fever); }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
@@ -190,7 +224,8 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--ink); }
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .card {
-  background: rgba(21, 19, 31, .94); border: 1px solid var(--line); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(36, 31, 56, .97), rgba(21, 19, 31, .97)); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, .7);
   padding: 22px; max-width: 320px; width: calc(100% - 32px); box-sizing: border-box;
   display: flex; flex-direction: column; gap: 14px;
 }
@@ -262,6 +297,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       <li><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
       <li><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
       <li><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
+      <li><div><b data-i18n="how4t"></b><span data-i18n="how4"></span>
+        <div class="kinds"><span><i class="k-gold"></i><em data-i18n="kGold"></em></span><span><i class="k-stone"></i><em data-i18n="kStone"></em></span><span><i class="k-bomb"></i><em data-i18n="kBomb"></em></span><span><i class="k-rain"></i><em data-i18n="kRain"></em></span></div></div></li>
     </ol>
     <p class="end" data-i18n-html="howEnd"></p>
     <div class="sizepick">
@@ -305,6 +342,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       <div class="stat"><span data-i18n="best"></span><b id="best">0</b></div>
     </div>
   </div>
+  <div class="lvrow"><b id="lvl">Lv.1</b><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div><span class="combo" id="combo"></span></div>
   <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
@@ -366,7 +404,20 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   let N = 4, S = 0, M = 0, B = 0, cell = 0;
   let grid, blocks, moving, parts, pops, bars, score, mult, feverUntil, feverTotal, nextSpawn, interval, flash;
-  let over = true, selected = null, drag = null, last = performance.now(), hiddenAt = 0;
+  let over = true, selected = null, drag = null, hover = null, last = performance.now(), hiddenAt = 0;
+  // levels: slams fill the level bar; each level can unlock a special brick
+  let level = 1, lvSlams = 0, combo = 0, lastSlam = -1e9, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false;
+  const COMBO_MS = 1500;
+  const levelNeed = l => 8 + 2 * l;
+  const KINDS = { gold: { lv: 2, key: 'newGold' }, stone: { lv: 3, key: 'newStone' }, bomb: { lv: 4, key: 'newBomb' }, rain: { lv: 5, key: 'newRain' } };
+  const DOUBLE_LV = 6;
+  // brick colors: [top highlight, face, side]
+  const KIND_COL = {
+    n: ['#f3966a', '#cf6339', '#7f3a20'],
+    gold: ['#ffe68f', '#f0b22e', '#94600f'],
+    stone: ['#b6b3c6', '#7e7b8f', '#45425a'],
+    bomb: ['#5d5779', '#35304a', '#17141f']
+  };
   // ---------- language ----------
   const I18N = {
     ko: {
@@ -378,10 +429,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
       how2t: '벽 충전', how2: '벽돌이 부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차면 바가 확 빛나요.',
       how3t: '눌러서 피버', how3: '빛나는 바를 누르면 피버. 벽돌이 빨리 나오고 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
+      how4t: '레벨과 특수 벽돌', how4: '벽을 칠수록 레벨이 오르고, 레벨마다 새 벽돌이 나와요.',
+      kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
+      lvUp: n => 'LEVEL ' + n, combo: n => '콤보 ' + n,
+      newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
+      newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       howEnd: '판이 벽돌로 <b>꽉 차면</b> 끝나요.',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
-      hint: '벽돌을 쓸어서 밀기 · 빛나는 바를 눌러 피버', keyboard: '키보드',
+      hint: '벽돌을 쓸어서 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
       rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
       privacy: '개인정보처리방침',
       rankSoon: '랭킹은 곧 열려요', rankFail: '랭킹을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.',
@@ -399,10 +455,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
       how2t: 'Charge the walls', how2: 'Each slam fills that wall\'s bar with light. When it is full, the bar flashes.',
       how3t: 'Tap for Fever', how3: 'Tap a glowing bar to start Fever: bricks come faster and points double. Tap another glowing bar during Fever to raise the multiplier.',
+      how4t: 'Levels and special bricks', how4: 'Slams raise your level, and each level brings a new kind of brick.',
+      kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
+      lvUp: n => 'LEVEL ' + n, combo: n => 'Combo ' + n,
+      newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
+      newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       howEnd: 'The game ends when the board is <b>full</b>.',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
-      hint: 'Swipe a brick to push · Tap a glowing bar for Fever', keyboard: 'Keys',
+      hint: 'Swipe a brick to push · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
       rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
       privacy: 'Privacy Policy',
       rankSoon: 'Ranking opens soon', rankFail: 'Couldn\'t load the ranking. Refresh in a moment.',
@@ -516,6 +577,24 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         else [392, 329.63, 261.63].forEach((f, i) => tone(f, t + i * 0.14, 0.32, { type: 'triangle', vol: 0.18 }));
       },
       tap() { if (!live()) return; tone(880, ac.currentTime, 0.04, { type: 'sine', vol: 0.06 }); },
+      levelUp() {
+        if (!live()) return; const t = ac.currentTime;
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, t + i * 0.07, 0.28, { type: 'square', vol: 0.06 }));
+        noise(t, 0.5, { vol: 0.08, freq: 1500, to: 9000, q: 0.5 });
+      },
+      boom() {
+        if (!live()) return; const t = ac.currentTime;
+        tone(110, t, 0.45, { vol: 0.6, to: 30 });
+        noise(t, 0.5, { vol: 0.5, freq: 1600, to: 120, q: 0.4, type: 'lowpass' });
+      },
+      crack() {
+        if (!live()) return; const t = ac.currentTime;
+        noise(t, 0.08, { vol: 0.35, freq: 3200, q: 2 }); tone(240, t, 0.1, { vol: 0.25, to: 120, type: 'square' });
+      },
+      gold() {
+        if (!live()) return; const t = ac.currentTime;
+        [1567.98, 2093].forEach((f, i) => tone(f, t + i * 0.06, 0.3, { type: 'sine', vol: 0.12 }));
+      },
       // mode: 'off' | 'title' (calm groove) | 'game' (full track)
       music(m) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
@@ -617,8 +696,39 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     bars = [0, 1, 2, 3].map(() => ({ charge: 0, full: false, flash: 0, spots: [] }));
     score = 0; mult = 1; feverUntil = 0; feverTotal = 1; flash = 0;
     interval = 1400; nextSpawn = performance.now() + 600;
-    selected = null; drag = null; over = false;
-    layout(); hud();
+    selected = null; drag = null; hover = null; over = false;
+    level = 1; lvSlams = 0; combo = 0; lastSlam = -1e9; banner = null; shake = 0; rings = []; forceType = null;
+    feverShown = false; shownCombo = 0; $('game').classList.remove('fever'); $('combo').classList.remove('on');
+    layout(); hud(); hudLevel();
+  }
+
+  function hudLevel() {
+    $('lvl').textContent = 'Lv.' + level;
+    $('lvfill').style.width = (lvSlams / levelNeed(level) * 100) + '%';
+  }
+
+  function pickType() {
+    if (forceType) { const k = forceType; forceType = null; return k; }
+    const odds = [
+      ['gold', level >= 2 ? 0.09 : 0],
+      ['stone', level >= 3 ? Math.min(0.26, 0.12 + 0.02 * (level - 3)) : 0],
+      ['bomb', level >= 4 ? 0.06 : 0],
+      ['rain', level >= 5 ? 0.04 : 0]
+    ];
+    let r = Math.random();
+    for (const [k, p] of odds) { if (r < p) return k; r -= p; }
+    return 'n';
+  }
+
+  function addSlam() {
+    if (++lvSlams >= levelNeed(level)) {
+      lvSlams = 0; level++;
+      const k = Object.keys(KINDS).find(k => KINDS[k].lv === level);
+      if (k) forceType = k;
+      banner = { title: t('lvUp', level), sub: k ? t(KINDS[k].key) : level === DOUBLE_LV ? t('newDouble') : '', life: 1 };
+      sfx.levelUp();
+    }
+    hudLevel();
   }
 
   const fever = now => now < feverUntil;
@@ -630,16 +740,21 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     c.classList.toggle('warn', blocks.length >= CFG[N].cap * 0.8);
   }
 
-  function spawn(now) {
+  function spawn(now, extra) {
     const empty = [];
     for (let i = 0; i < grid.length; i++) if (!grid[i]) empty.push(i);
     if (!empty.length) return gameOver();
     const i = empty[Math.floor(Math.random() * empty.length)];
-    const b = { x: i % N, y: Math.floor(i / N), born: now };
+    const type = pickType();
+    const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1 };
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
     sfx.spawn(blocks.length / (N * N));
-    interval = Math.max(SPAWN_MIN_MS, interval * SPAWN_RAMP);
+    if (!extra) {
+      interval = Math.max(SPAWN_MIN_MS, interval * SPAWN_RAMP);
+      // from DOUBLE_LV on, bricks sometimes arrive in pairs
+      if (level >= DOUBLE_LV && Math.random() < Math.min(0.35, 0.1 * (level - DOUBLE_LV + 1))) return spawn(now, true);
+    }
     hud();
   }
 
@@ -654,8 +769,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (toWall) {
       grid[b.y * N + b.x] = null;
       blocks.splice(blocks.indexOf(b), 1);
-      moving.push({ fx: sx, fy: sy, d, group: { n: 0 } });
+      moving.push({ fx: sx, fy: sy, d, type: b.type, hp: b.hp });
       if (b === selected) selected = null;
+      if (b === hover) hover = null;
       sfx.slide();
     } else if (x === b.x && y === b.y) {
       b.bump = { d, t: 1 };   // blocked right away
@@ -675,28 +791,70 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
            (m.d === 1 && m.fx >= N - 1) || (m.d === 3 && m.fx <= 0);
   }
 
-  function hit(m) {
-    m.group.n++;
-    const pts = 10 * m.group.n * mult;
-    score += pts;
-    const bar = bars[m.d];
-    if (!bar.full) {
-      bar.charge++;
-      if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; sfx.charged(); }
+  function chargeBar(bar, n) {
+    if (bar.full) return;
+    bar.charge = Math.min(CFG[N].need, bar.charge + n);
+    if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; sfx.charged(); }
+  }
+
+  function burst(x, y, d, cols, n, speed = 1) {
+    if (reduceMotion) n = Math.min(n, 3);
+    const { dx, dy } = DIRS[d] || { dx: 0, dy: 0 };
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = (40 + Math.random() * 180) * speed;
+      parts.push({ x, y, vx: Math.cos(a) * sp - dx * 90, vy: Math.sin(a) * sp - dy * 90, life: 1, s: 2 + Math.random() * 4, c: cols[i % cols.length] });
     }
-    sfx.slam(m.d, m.group.n, mult > 1);
+  }
+
+  function removeBrick(b) {
+    grid[b.y * N + b.x] = null;
+    blocks.splice(blocks.indexOf(b), 1);
+    if (b === selected) selected = null;
+    if (b === hover) hover = null;
+    if (drag && drag.b === b) drag = null;
+  }
+
+  function hit(m, now) {
+    combo = now - lastSlam < COMBO_MS ? combo + 1 : 1;
+    lastSlam = now;
+    const k = m.type || 'n';
+    let pts = (10 + 5 * Math.min(combo - 1, 10)) * mult * (k === 'gold' ? 3 : 1);
+    chargeBar(bars[m.d], k === 'rain' ? CFG[N].need : k === 'gold' ? 2 : 1);
+    sfx.slam(m.d, combo, mult > 1);
+    if (k === 'gold') sfx.gold();
     // impact point on the wall
+    const ex = Math.round(m.fx), ey = Math.round(m.fy);
     const cx = M + (m.fx + 0.5) * cell, cy = M + (m.fy + 0.5) * cell;
     const ix = m.d === 1 ? S - M : m.d === 3 ? M : cx;
     const iy = m.d === 0 ? M : m.d === 2 ? S - M : cy;
-    bar.spots.push({ pos: (m.d === 0 || m.d === 2) ? m.fx : m.fy, t: 1 });
-    const n = reduceMotion ? 3 : 10;
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 160;
-      const { dx, dy } = DIRS[m.d];
-      parts.push({ x: ix, y: iy, vx: Math.cos(a) * sp - dx * 90, vy: Math.sin(a) * sp - dy * 90, life: 1, s: 2 + Math.random() * 3, c: Math.random() < .5 ? C.brick : C['brick-hi'] });
+    bars[m.d].spots.push({ pos: (m.d === 0 || m.d === 2) ? m.fx : m.fy, t: 1 });
+    const col = k === 'rain' ? ['#ff5a7a', '#ffcf4a', '#4ae08a', '#4ab0ff', '#b36bff'] : KIND_COL[k].slice(0, 2);
+    burst(ix, iy, m.d, col, 14);
+    rings.push({ x: ix, y: iy, life: 1, c: k === 'gold' ? '#ffe68f' : C.glow });
+    shake = Math.max(shake, 4 + Math.min(combo, 6));
+    if (k === 'stone' && m.hp > 1) {
+      // a stone cracks and bounces back onto the edge cell
+      sfx.crack();
+      if (!grid[ey * N + ex]) { const b = { x: ex, y: ey, born: now, type: 'stone', hp: 1 }; grid[ey * N + ex] = b; blocks.push(b); }
     }
-    pops.push({ x: cx, y: cy, text: '+' + pts, life: 1, hot: mult > 1 || m.group.n > 1 });
+    if (k === 'bomb') {
+      sfx.boom();
+      shake = 16; flash = Math.max(flash, 0.6);
+      rings.push({ x: M + (ex + 0.5) * cell, y: M + (ey + 0.5) * cell, life: 1, c: C.danger, big: true });
+      for (const b of blocks.slice()) {
+        if (Math.abs(b.x - ex) <= 1 && Math.abs(b.y - ey) <= 1) {
+          removeBrick(b);
+          const p = 20 * mult;
+          pts += p;
+          const bx = M + (b.x + 0.5) * cell, by = M + (b.y + 0.5) * cell;
+          burst(bx, by, -1, KIND_COL[b.type === 'rain' || !KIND_COL[b.type] ? 'n' : b.type].slice(0, 2), 12, 1.3);
+          pops.push({ x: bx, y: by, text: '+' + p, life: 1, hot: true });
+        }
+      }
+    }
+    score += pts;
+    pops.push({ x: cx, y: cy, text: '+' + pts, life: 1, hot: mult > 1 || combo > 2 || k === 'gold' });
+    addSlam();
     hud();
   }
 
@@ -714,7 +872,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
 
   function gameOver() {
-    over = true; drag = null;
+    over = true; drag = null; banner = null;
+    if (feverShown) { feverShown = false; $('game').classList.remove('fever'); }
     hooks.gameStop();
     const isBest = score > best;
     sfx.music('off');
@@ -763,8 +922,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     drag = { b, x0: p.x, y0: p.y };
     cv.setPointerCapture(e.pointerId);
   });
+  function brickAt(p) {
+    const gx = Math.floor((p.x - M) / cell), gy = Math.floor((p.y - M) / cell);
+    return gx >= 0 && gy >= 0 && gx < N && gy < N ? grid[gy * N + gx] : null;
+  }
+  let mouseAt = null;
+  cv.addEventListener('pointerleave', () => { hover = null; mouseAt = null; });
   cv.addEventListener('pointermove', e => {
-    if (!drag || over) return;
+    if (over) return;
+    if (!drag) { if (e.pointerType === 'mouse') { mouseAt = pt(e); hover = brickAt(mouseAt); } return; }
     const p = pt(e), dx = p.x - drag.x0, dy = p.y - drag.y0;
     if (Math.hypot(dx, dy) < Math.max(10, Math.min(28, cell * 0.25))) return;
     const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
@@ -780,8 +946,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const map = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
     if (e.key in map) {
       e.preventDefault();
-      const target = (selected && blocks.includes(selected)) ? selected : blocks[0];
-      if (target) push(target, map[e.key]);
+      // on a computer: point at a brick with the mouse, then push it with the arrows
+      if (hover && blocks.includes(hover)) { push(hover, map[e.key]); hover = mouseAt && brickAt(mouseAt); }
     } else if (e.key === 'f' || e.key === 'F' || e.key === ' ') {
       e.preventDefault();
       const d = bars.findIndex(b => b.full);
@@ -795,20 +961,81 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
   }
 
-  function drawBrick(x, y, s, sel) {
-    const pad = cell * 0.06, size = (cell - pad * 2) * s;
-    const px = M + x * cell + (cell - size) / 2, py = M + y * cell + (cell - size) / 2;
-    const r = Math.min(10, size * 0.1);
-    ctx.fillStyle = C['brick-lo']; rr(px, py, size, size, r); ctx.fill();
-    ctx.fillStyle = C.brick; rr(px, py, size, size * 0.86, r); ctx.fill();
-    if (size > 10) {
-      ctx.fillStyle = C['brick-hi'];
-      ctx.fillRect(px + size * 0.15, py + size * 0.12, size * 0.7, Math.max(1, size * 0.08));
-      ctx.fillStyle = C['brick-lo'];
-      ctx.fillRect(px + size * 0.08, py + size * 0.46, size * 0.84, Math.max(1, size * 0.05));
-      ctx.fillRect(px + size * 0.48, py + size * 0.46, Math.max(1, size * 0.05), size * 0.34);
+  function starPath(cx, cy, R, r, n = 5) {
+    ctx.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / n, d = i % 2 ? r : R;
+      ctx.lineTo(cx + Math.cos(a) * d, cy + Math.sin(a) * d);
     }
-    if (sel) { ctx.strokeStyle = C.ink; ctx.lineWidth = 3; rr(px - 3, py - 3, size + 6, size + 6, r + 3); ctx.stroke(); }
+    ctx.closePath();
+  }
+
+  function drawBrick(x, y, s, b, now, sel) {
+    const type = (b && b.type) || 'n';
+    const pad = cell * 0.07, size = (cell - pad * 2) * s;
+    if (size < 2) return;
+    const px = M + x * cell + (cell - size) / 2, py = M + y * cell + (cell - size) / 2;
+    const r = Math.min(14, size * 0.18);
+    let hi, mid, lo;
+    if (type === 'rain') {
+      const h = reduceMotion ? 300 : (now / 6) % 360;
+      hi = `hsl(${h},95%,74%)`; mid = `hsl(${(h + 60) % 360},85%,58%)`; lo = `hsl(${(h + 60) % 360},65%,30%)`;
+    } else [hi, mid, lo] = KIND_COL[type];
+    // drop shadow, side, top face
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(px + size * 0.03, py + size * 0.09, size, size, r); ctx.fill();
+    ctx.fillStyle = lo; rr(px, py, size, size, r); ctx.fill();
+    let g;
+    if (type === 'rain') {
+      const h = reduceMotion ? 300 : (now / 6) % 360;
+      g = ctx.createLinearGradient(px, py, px + size, py + size);
+      for (let i = 0; i <= 4; i++) g.addColorStop(i / 4, `hsl(${(h + i * 72) % 360},90%,64%)`);
+    } else {
+      g = ctx.createLinearGradient(px, py, px, py + size * 0.86);
+      g.addColorStop(0, hi); g.addColorStop(1, mid);
+    }
+    ctx.fillStyle = g; rr(px, py, size, size * 0.86, r); ctx.fill();
+    if (size > 12) {
+      ctx.fillStyle = 'rgba(255,255,255,.24)'; rr(px + size * 0.12, py + size * 0.07, size * 0.76, size * 0.13, size * 0.065); ctx.fill();
+      const cx = px + size / 2, cy = py + size * 0.47;
+      if (type === 'n') {
+        ctx.fillStyle = 'rgba(127,58,32,.55)';
+        ctx.fillRect(px + size * 0.1, py + size * 0.42, size * 0.8, Math.max(1, size * 0.05));
+        ctx.fillRect(px + size * 0.475, py + size * 0.42, Math.max(1, size * 0.05), size * 0.36);
+      } else if (type === 'gold') {
+        const tw = reduceMotion ? 1 : 0.85 + 0.15 * Math.sin(now / 180 + x * 3 + y);
+        ctx.fillStyle = '#fff7d6'; starPath(cx, cy, size * 0.22 * tw, size * 0.1 * tw); ctx.fill();
+        ctx.strokeStyle = 'rgba(148,96,15,.5)'; ctx.lineWidth = Math.max(1, size * 0.025); ctx.stroke();
+      } else if (type === 'stone') {
+        ctx.strokeStyle = 'rgba(30,28,42,.55)'; ctx.lineWidth = Math.max(1, size * 0.04); ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(px + size * 0.2, py + size * 0.33); ctx.lineTo(px + size * 0.42, py + size * 0.33);
+        ctx.moveTo(px + size * 0.58, py + size * 0.6); ctx.lineTo(px + size * 0.8, py + size * 0.6);
+        ctx.stroke();
+        if (b && b.hp < 2) {   // cracked: one more slam breaks it
+          ctx.strokeStyle = '#1b1926'; ctx.lineWidth = Math.max(1.5, size * 0.045);
+          ctx.beginPath();
+          ctx.moveTo(px + size * 0.5, py + size * 0.06); ctx.lineTo(px + size * 0.42, py + size * 0.3);
+          ctx.lineTo(px + size * 0.56, py + size * 0.46); ctx.lineTo(px + size * 0.46, py + size * 0.72);
+          ctx.moveTo(px + size * 0.56, py + size * 0.46); ctx.lineTo(px + size * 0.76, py + size * 0.4);
+          ctx.stroke();
+        }
+      } else if (type === 'bomb') {
+        const pulse = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now / 110);
+        ctx.fillStyle = '#121019'; ctx.beginPath(); ctx.arc(cx, cy + size * 0.04, size * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = C.danger; ctx.globalAlpha = 0.5 + 0.5 * pulse; ctx.lineWidth = Math.max(1.5, size * 0.04);
+        ctx.beginPath(); ctx.arc(cx, cy + size * 0.04, size * 0.22, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#c9b48a'; ctx.lineWidth = Math.max(1, size * 0.035);
+        ctx.beginPath(); ctx.moveTo(cx + size * 0.12, cy - size * 0.13); ctx.quadraticCurveTo(cx + size * 0.2, cy - size * 0.3, cx + size * 0.3, cy - size * 0.26); ctx.stroke();
+        ctx.save(); ctx.shadowColor = C.glow; ctx.shadowBlur = 8 + 10 * pulse; ctx.fillStyle = pulse > 0.5 ? '#fff3c4' : C.glow;
+        ctx.beginPath(); ctx.arc(cx + size * 0.3, cy - size * 0.26, size * (0.04 + 0.03 * pulse), 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      } else if (type === 'rain') {
+        ctx.fillStyle = 'rgba(255,255,255,.92)'; starPath(cx, cy, size * 0.2, size * 0.06, 4); ctx.fill();
+      }
+    }
+    if (sel) {
+      ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.shadowColor = C.glow; ctx.shadowBlur = 12;
+      rr(px - 4, py - 4, size + 8, size + 8, r + 4); ctx.stroke(); ctx.restore();
+    }
   }
 
   function barRect(d) {
@@ -859,46 +1086,81 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     ctx.clearRect(0, 0, S, S);
     const isFever = !over && fever(now);
     const cap = CFG[N].cap;
-    // board
-    ctx.fillStyle = C.board; rr(M, M, B, B, 4); ctx.fill();
+    ctx.save();
+    if (shake > 0.3 && !reduceMotion) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    // board panel and cells
+    const P = Math.max(4, cell * 0.06);
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 8;
+    ctx.fillStyle = C.board; rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#262139';
+    for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) {
+      rr(M + gx * cell + cell * 0.05, M + gy * cell + cell * 0.05, cell * 0.9, cell * 0.9, Math.min(10, cell * 0.12)); ctx.fill();
+    }
     if (isFever) {
-      ctx.save(); ctx.globalAlpha = 0.07 + (reduceMotion ? 0 : 0.04 * Math.sin(now / 200)); ctx.fillStyle = C.fever; rr(M, M, B, B, 4); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.1 + (reduceMotion ? 0 : 0.05 * Math.sin(now / 200)); ctx.fillStyle = C.fever;
+      rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.fill(); ctx.restore();
     }
-    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
-    ctx.beginPath();
-    for (let i = 1; i < N; i++) {
-      const v = Math.round(M + i * cell) + 0.5;
-      ctx.moveTo(v, M); ctx.lineTo(v, S - M); ctx.moveTo(M, v); ctx.lineTo(S - M, v);
-    }
-    ctx.stroke(); ctx.globalAlpha = 1;
     // danger outline
     if (blocks && blocks.length >= cap * 0.8 && !over) {
-      ctx.save(); ctx.strokeStyle = C.danger; ctx.lineWidth = 2;
+      ctx.save(); ctx.strokeStyle = C.danger; ctx.lineWidth = 2.5;
       ctx.globalAlpha = reduceMotion ? 0.7 : 0.4 + 0.4 * Math.sin(now / 120);
-      rr(M + 1, M + 1, B - 2, B - 2, 4); ctx.stroke(); ctx.restore();
+      rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.stroke(); ctx.restore();
     }
     for (let d = 0; d < 4; d++) drawBar(d, now, isFever);
+    const aimed = drag ? drag.b : hover;
     for (const b of blocks) {
-      const t = Math.min(1, (now - b.born) / 180);
+      const k = Math.min(1, (now - b.born) / 260);
+      // spawn pop: overshoot then settle
+      const sc = reduceMotion ? 1 : 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);
       let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
-      if (b.bump && !reduceMotion) { const k = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * k; by += DIRS[b.bump.d].dy * k; }
-      drawBrick(bx, by, reduceMotion ? 1 : 1 - Math.pow(1 - t, 3), b === selected);
+      if (b.bump && !reduceMotion) { const q = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * q; by += DIRS[b.bump.d].dy * q; }
+      drawBrick(bx, by, Math.max(0, sc), b, now, b === aimed);
     }
-    for (const m of moving) drawBrick(m.fx, m.fy, 1, false);
+    for (const m of moving) drawBrick(m.fx, m.fy, 1, m, now, false);
     for (const p of parts) {
-      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c;
+      const z = p.s * (0.5 + p.life * 0.5); ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z);
     }
     ctx.globalAlpha = 1;
+    for (const g of rings) {
+      ctx.save(); ctx.globalAlpha = Math.max(0, g.life) * 0.8; ctx.strokeStyle = g.c; ctx.lineWidth = 2 + 4 * g.life;
+      ctx.beginPath(); ctx.arc(g.x, g.y, (1 - g.life) * cell * (g.big ? 1.9 : 0.9) + 4, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const disp = css.getPropertyValue('--display');
     for (const p of pops) {
       ctx.globalAlpha = Math.max(0, p.life);
-      ctx.font = `${Math.min(28, Math.max(12, cell * 0.3))}px ${css.getPropertyValue('--display')}`;
+      ctx.font = `${Math.min(28, Math.max(12, cell * 0.3))}px ${disp}`;
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(15,12,25,.7)';
+      const yy = p.y - (1 - p.life) * Math.min(60, cell * 0.6);
+      ctx.strokeText(p.text, p.x, yy);
       ctx.fillStyle = p.hot ? C.fever : C.ink;
-      ctx.fillText(p.text, p.x, p.y - (1 - p.life) * Math.min(60, cell * 0.6));
+      ctx.fillText(p.text, p.x, yy);
     }
     ctx.globalAlpha = 1;
     if (flash > 0 && !reduceMotion) {
-      ctx.save(); ctx.globalAlpha = flash * 0.35; ctx.fillStyle = C.fever; ctx.fillRect(0, 0, S, S); ctx.restore();
+      ctx.save(); ctx.globalAlpha = flash * 0.35; ctx.fillStyle = C.fever; rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+    // level-up banner across the board
+    if (banner) {
+      const age = 1 - banner.life;
+      const a = Math.min(1, age / 0.08, banner.life / 0.2);
+      const pop = reduceMotion ? 1 : 1 + 0.25 * Math.max(0, 1 - age / 0.12);
+      const hgt = Math.max(70, cell * (banner.sub ? 1.5 : 1.1));
+      ctx.save(); ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(15,12,25,.82)'; ctx.fillRect(0, S / 2 - hgt / 2, S, hgt);
+      ctx.fillStyle = C.glow; ctx.fillRect(0, S / 2 - hgt / 2, S, 2); ctx.fillRect(0, S / 2 + hgt / 2 - 2, S, 2);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `${Math.round(Math.min(46, cell * 0.5) * pop)}px ${disp}`;
+      ctx.shadowColor = C.glow; ctx.shadowBlur = 18; ctx.fillStyle = C.glow;
+      ctx.fillText(banner.title, S / 2, S / 2 - (banner.sub ? hgt * 0.16 : 0));
+      if (banner.sub) {
+        ctx.shadowBlur = 0; ctx.fillStyle = C.ink;
+        ctx.font = `600 ${Math.round(Math.max(12, Math.min(17, cell * 0.16)))}px ${css.getPropertyValue('--body')}`;
+        ctx.fillText(banner.sub, S / 2, S / 2 + hgt * 0.24, S - 24);
+      }
+      ctx.restore();
     }
   }
 
@@ -915,7 +1177,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         const m = moving[i], { dx, dy } = DIRS[m.d];
         m.fx = Math.min(N - 1, Math.max(0, m.fx + dx * step));
         m.fy = Math.min(N - 1, Math.max(0, m.fy + dy * step));
-        if (reached(m)) { moving.splice(i, 1); hit(m); }
+        if (reached(m)) { moving.splice(i, 1); hit(m, now); }
       }
       for (const b of blocks) {
         if (b.slide) {
@@ -926,6 +1188,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (b.bump && (b.bump.t -= dt * 5) <= 0) b.bump = null;
       }
       sfx.setFever(fever(now));
+      if (fever(now) !== feverShown) { feverShown = fever(now); $('game').classList.toggle('fever', feverShown); }
+      const cShow = now - lastSlam < COMBO_MS && combo >= 2 ? combo : 0;
+      if (cShow !== shownCombo) {
+        shownCombo = cShow;
+        const el = $('combo'); el.classList.toggle('on', cShow > 0); if (cShow) el.textContent = t('combo', cShow);
+      }
       $('feverfill').style.width = fever(now) ? ((feverUntil - now) / feverTotal * 100) + '%' : '0';
     }
     for (let i = parts.length - 1; i >= 0; i--) {
@@ -938,6 +1206,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       for (let i = bar.spots.length - 1; i >= 0; i--) { bar.spots[i].t -= dt * 3; if (bar.spots[i].t <= 0) bar.spots.splice(i, 1); }
     }
     flash = Math.max(0, (flash || 0) - dt * 2.5);
+    shake = Math.max(0, shake - dt * 45);
+    for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt * 2.6; if (rings[i].life <= 0) rings.splice(i, 1); }
+    if (banner && (banner.life -= dt / 2.2) <= 0) banner = null;
     if (grid) draw(now);
     requestAnimationFrame(tick);
   }
