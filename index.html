@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#15131f">
+<meta name="theme-color" content="#07050f">
 <meta name="description" content="Brick Slam · 브릭 슬램. Push bricks into the walls, tap a glowing wall for Fever, and beat your friends on the ranking.">
 <meta property="og:title" content="Brick Slam · 브릭 슬램">
 <meta property="og:description" content="벽돌을 밀어서 벽에 쾅! 빛나는 벽을 눌러 피버. 친구들과 랭킹 겨루기.">
@@ -13,28 +13,30 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" as="image" href="title.jpg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2315131f'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='%23c4623a'/%3E%3Crect x='28' y='4' width='3' height='24' rx='1.5' fill='%23ffb547'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2307050f'/%3E%3Crect x='7.5' y='7.5' width='17' height='17' rx='3' fill='none' stroke='%23ff3fa4' stroke-width='3'/%3E%3Crect x='28' y='4' width='3' height='24' rx='1.5' fill='%232ef2ff'/%3E%3C/svg%3E">
 <title>Brick Slam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Monoton&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
 <style>
 /* Layout: phone-first. A scrolling home (hero board, start buttons, how-to) and a fixed full-screen game view: HUD strip, square board framed by four charge bars. Deliberately single dark theme. */
 :root {
-  --ground: #15131f;
-  --board: #1e1b2d;
-  --line: #2c2843;
-  --brick: #c4623a;
-  --brick-hi: #e98d5f;
-  --brick-lo: #7f3a20;
-  --glow: #ffb547;
-  --fever: #ff4f8b;
-  --ink: #efe9f7;
-  --muted: #9a93b0;
-  --danger: #ff5a4e;
+  --ground: #07050f;
+  --board: #0d0a1c;
+  --line: #2a2150;
+  --brick: #ff3fa4;
+  --brick-hi: #ffa6dc;
+  --brick-lo: #4a0c33;
+  --glow: #2ef2ff;
+  --fever: #ffd84d;
+  --ink: #f4f1ff;
+  --muted: #958fbf;
+  --danger: #ff4d5e;
+  --hot: #ff3fa4;
+  --violet: #8a4dff;
+  --neon: "Monoton", "Black Han Sans", sans-serif;
   --display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   color-scheme: dark;
@@ -42,13 +44,22 @@
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
-  background: radial-gradient(120% 70% at 50% -10%, #2b2146 0%, rgba(43, 33, 70, 0) 60%) fixed, var(--ground);
+  background: radial-gradient(90% 45% at 50% 62%, rgba(255, 63, 164, .28) 0%, rgba(138, 77, 255, .12) 40%, rgba(7, 5, 15, 0) 72%) fixed,
+    radial-gradient(120% 60% at 50% -10%, #1d1240 0%, rgba(29, 18, 64, 0) 60%) fixed, var(--ground);
   color: var(--ink); font-family: var(--body);
   margin: 0; overscroll-behavior: none; word-break: keep-all;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
 body.playing { overflow: hidden; touch-action: none; }
 button { touch-action: manipulation; }
+/* synthwave floor: a perspective grid that scrolls toward you, one line per beat while a song plays */
+.floor { position: fixed; left: -50%; right: -50%; bottom: 0; height: 46vh; pointer-events: none; z-index: -1; perspective: 260px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); mask-image: linear-gradient(to top, #000 30%, transparent); }
+.floor::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 300%; transform-origin: 50% 100%; transform: rotateX(64deg);
+  background-image: linear-gradient(rgba(255, 63, 164, .55) 2px, transparent 2px), linear-gradient(90deg, rgba(46, 242, 255, .32) 2px, transparent 2px);
+  background-size: 64px 64px; animation: floor var(--beat, .6s) linear infinite; }
+@keyframes floor { to { background-position: 0 64px; } }
+body.playing .floor { height: 34vh; opacity: .7; }
 
 /* ---------- home ---------- */
 .home {
@@ -61,7 +72,18 @@ button { touch-action: manipulation; }
 .view .back { align-self: flex-start; }
 .title { gap: 28px; min-height: calc(100svh - 64px); justify-content: center; }
 .title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 18vw, 76px); line-height: .95; margin: 0; letter-spacing: .01em; text-align: center; }
-.titleart { display: block; width: min(100%, 400px, calc(100svh - 290px)); min-width: 200px; height: auto; align-self: center; margin-block: -12px -20px; }
+.neontitle { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 4vh; }
+.neontitle .sun { position: absolute; z-index: -1; top: 0; width: min(64vw, 260px); aspect-ratio: 1; border-radius: 50%;
+  background: linear-gradient(180deg, #ffd84d 0%, #ff7a59 45%, #ff3fa4 100%); opacity: .85;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88%); mask-image: linear-gradient(180deg, #000 0 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82% 88%, transparent 88%);
+  filter: drop-shadow(0 0 40px rgba(255, 63, 164, .7)); }
+.neontitle h1 { font-family: var(--neon); font-weight: 400; margin: 0; text-align: center; line-height: 1.02; letter-spacing: .02em;
+  font-size: clamp(50px, 16vw, 78px); display: flex; flex-direction: column; }
+.neontitle .n1 { color: #e9fdff; text-shadow: 0 0 4px #fff, 0 0 12px var(--glow), 0 0 28px var(--glow), 0 0 54px rgba(46, 242, 255, .6); }
+.neontitle .n2 { color: #ffe6f4; text-shadow: 0 0 4px #fff, 0 0 12px var(--hot), 0 0 28px var(--hot), 0 0 54px rgba(255, 63, 164, .7); animation: flicker 5s infinite; }
+.neontitle .sub { margin: 4px 0 0; font-family: var(--display); font-size: 18px; letter-spacing: .5em; padding-left: .5em; color: var(--fever);
+  text-shadow: 0 0 10px rgba(255, 216, 77, .8); }
+@keyframes flicker { 0%, 7%, 9%, 11%, 60%, 100% { opacity: 1; } 8%, 10% { opacity: .35; } 61% { opacity: .7; } }
 .title h1 em { font-style: normal; color: var(--glow); }
 /* short screens (landscape phones, game portals): keep each view on one screen */
 @media (max-height: 760px) {
@@ -127,14 +149,15 @@ button { touch-action: manipulation; }
 .play { display: flex; flex-direction: column; gap: 10px; }
 .btn {
   font-family: var(--display); font-size: 22px; padding: 14px 0; border-radius: 12px; border: 0;
-  background: linear-gradient(180deg, #ffc76a, var(--glow) 55%, #f59f2c); color: var(--ground); cursor: pointer; width: 100%;
+  background: linear-gradient(90deg, var(--hot), var(--violet)); color: #fff; cursor: pointer; width: 100%; text-shadow: 0 0 10px rgba(255, 255, 255, .6);
   display: flex; justify-content: center; align-items: baseline; gap: 8px;
-  box-shadow: 0 4px 0 #b06a1c, 0 12px 28px -10px rgba(255, 181, 71, .6); transition: transform .08s, box-shadow .08s;
+  box-shadow: 0 0 0 1px rgba(255, 166, 220, .6) inset, 0 0 18px rgba(255, 63, 164, .55), 0 0 42px -6px rgba(138, 77, 255, .7); transition: transform .08s, box-shadow .08s;
 }
-.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #b06a1c, 0 6px 16px -10px rgba(255, 181, 71, .6); }
+.btn:active { transform: scale(.97); box-shadow: 0 0 0 1px rgba(255, 166, 220, .8) inset, 0 0 30px rgba(255, 63, 164, .9); }
 .btn small { font-family: var(--body); font-size: 13px; opacity: .75; }
-.btn.alt { background: linear-gradient(180deg, #252137, #1c192b); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 4px 0 #0e0c16; }
-.btn.alt:active { box-shadow: 0 1px 0 #0e0c16; }
+.btn.alt { background: rgba(10, 8, 24, .7); color: #dffcff; border: 1.5px solid var(--glow); text-shadow: 0 0 8px rgba(46, 242, 255, .7);
+  box-shadow: 0 0 14px rgba(46, 242, 255, .35), inset 0 0 14px rgba(46, 242, 255, .18); }
+.btn.alt:active { box-shadow: 0 0 24px rgba(46, 242, 255, .7), inset 0 0 18px rgba(46, 242, 255, .3); }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .bestline { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bestline b { color: var(--ink); font-weight: 600; }
@@ -145,13 +168,13 @@ button { touch-action: manipulation; }
 .how li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; counter-increment: step; }
 .how li::before {
   content: counter(step); font-family: var(--display); font-size: 18px; width: 34px; height: 34px; border-radius: 9px;
-  display: grid; place-items: center; background: linear-gradient(180deg, #e98d5f, var(--brick)); color: #fff4e8;
-  box-shadow: inset 0 -4px 0 var(--brick-lo);
+  display: grid; place-items: center; background: rgba(255, 63, 164, .15); color: #fff; border: 2px solid var(--hot);
+  box-shadow: 0 0 12px rgba(255, 63, 164, .6), inset 0 0 8px rgba(255, 63, 164, .4); text-shadow: 0 0 8px var(--hot);
 }
 .how .kinds { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; }
 .how .kinds span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
 .how .kinds i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
-.how .k-gold { background: #f2b632; } .how .k-stone { background: #8a8799; } .how .k-bomb { background: #3a3550; box-shadow: inset 0 0 0 3px #ff5a4e; }
+.how .k-gold { border: 2px solid #ffd84d; box-shadow: 0 0 8px #ffd84d; } .how .k-stone { border: 2px solid #8f8cff; box-shadow: 0 0 8px #8f8cff; } .how .k-bomb { background: #120a14; border: 2px solid #ff4d5e; box-shadow: 0 0 8px #ff4d5e; }
 .how .k-rain { background: linear-gradient(135deg, #ff5a7a, #ffcf4a, #4ae08a, #4ab0ff, #b36bff); }
 .how li div { min-width: 0; font-size: 15px; line-height: 1.55; }
 .how li b { display: block; font-weight: 600; margin-bottom: 2px; }
@@ -162,9 +185,10 @@ button { touch-action: manipulation; }
 .songs { display: grid; gap: 8px; width: 100%; max-width: 420px; align-self: center; }
 .songs button {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; text-align: left; cursor: pointer;
-  padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: #1c192b; color: var(--ink); font: inherit;
+  padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(13, 10, 28, .8); color: var(--ink); font: inherit;
 }
-.songs button[aria-checked="true"] { border-color: var(--glow); background: #2a2238; box-shadow: 0 0 0 1px var(--glow), 0 8px 22px -12px rgba(255, 181, 71, .7); }
+.songs button[aria-checked="true"] { border-color: var(--glow); background: rgba(46, 242, 255, .08); box-shadow: 0 0 0 1px var(--glow), 0 0 22px -4px rgba(46, 242, 255, .7); }
+.songs button[aria-checked="true"] b { text-shadow: 0 0 10px rgba(46, 242, 255, .8); }
 .songs b { font-family: var(--display); font-weight: 400; font-size: 19px; }
 .songs .stars { color: var(--glow); font-size: 14px; letter-spacing: 1px; text-align: right; }
 .songs small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -172,19 +196,19 @@ button { touch-action: manipulation; }
 .judges { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
 .judges b { color: var(--ink); font-weight: 600; }
 .judges .p { color: #7df3ff; } .judges .g { color: #b9f58a; } .judges .m { color: var(--danger); }
-.grade { font-family: var(--display); font-size: 54px; line-height: 1; margin: 0; color: var(--glow); text-shadow: 0 0 24px rgba(255, 181, 71, .6); }
+.grade { font-family: var(--display); font-size: 54px; line-height: 1; margin: 0; color: var(--glow); text-shadow: 0 0 6px #fff, 0 0 24px var(--glow); }
 
 /* ---------- game ---------- */
 .game {
   position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;
   padding-inline: 16px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  box-sizing: border-box; background: radial-gradient(90% 55% at 50% 50%, #241d3a 0%, var(--ground) 72%);
+  box-sizing: border-box; background: radial-gradient(90% 55% at 50% 45%, #1a1038 0%, rgba(7, 5, 15, 0) 72%);
   transition: background-color .4s;
 }
 .game::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .5s;
-  background: radial-gradient(90% 60% at 50% 50%, rgba(255, 79, 139, .22) 0%, rgba(255, 79, 139, 0) 70%);
+  background: radial-gradient(90% 60% at 50% 50%, rgba(255, 216, 77, .2) 0%, rgba(255, 63, 164, .1) 45%, rgba(255, 63, 164, 0) 75%);
 }
 .game.fever::before { opacity: 1; }
 .game > * { width: 100%; max-width: 640px; }
@@ -211,7 +235,8 @@ button { touch-action: manipulation; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .stat span { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
 .stat b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
-#mult.on { color: var(--fever); }
+#mult.on { color: var(--fever); text-shadow: 0 0 10px var(--fever); }
+.stat b { text-shadow: 0 0 10px rgba(244, 241, 255, .35); }
 #count.warn { color: var(--danger); }
 @media (max-width: 430px) {
   .topbar { gap: 8px; }
@@ -223,20 +248,20 @@ button { touch-action: manipulation; }
   .stat span { font-size: 10px; }
 }
 .lvrow { display: flex; align-items: center; gap: 10px; }
-.lvrow b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--glow); min-width: 54px; }
+.lvrow b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--glow); min-width: 54px; text-shadow: 0 0 10px rgba(46, 242, 255, .7); }
 .lvbar { flex: 1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-.lvbar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #f59f2c, var(--glow)); transition: width .25s; }
+.lvbar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); transition: width .25s; }
 .lvrow .combo { font-family: var(--display); font-size: 16px; color: var(--fever); min-width: 76px; text-align: right; opacity: 0; transition: opacity .2s; }
 .lvrow .combo.on { opacity: 1; }
 .feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.feverbar i { display: block; height: 100%; width: 0; background: var(--fever); }
+.feverbar i { display: block; height: 100%; width: 0; background: var(--fever); box-shadow: 0 0 8px var(--fever); }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
 .tutbox {
   position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
   width: min(92%, 420px); box-sizing: border-box; padding: 10px 14px; border-radius: 12px;
-  background: rgba(21, 19, 31, .92); border: 1px solid var(--glow); box-shadow: 0 8px 24px -10px rgba(255, 181, 71, .6);
+  background: rgba(8, 6, 18, .92); border: 1px solid var(--glow); box-shadow: 0 0 22px -4px rgba(46, 242, 255, .6);
   font-size: 15px; line-height: 1.45; text-align: center; color: var(--ink);
 }
 .tutbox b { color: var(--glow); font-weight: 600; }
@@ -248,8 +273,8 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--ink); }
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .card {
-  background: linear-gradient(180deg, rgba(36, 31, 56, .97), rgba(21, 19, 31, .97)); border: 1px solid var(--line); border-radius: 16px;
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, .7);
+  background: linear-gradient(180deg, rgba(26, 16, 56, .97), rgba(8, 6, 18, .97)); border: 1px solid var(--hot); border-radius: 16px;
+  box-shadow: 0 0 30px -6px rgba(255, 63, 164, .6), 0 20px 50px -12px rgba(0, 0, 0, .8);
   padding: 22px; max-width: 320px; width: calc(100% - 32px); box-sizing: border-box;
   display: flex; flex-direction: column; gap: 14px;
 }
@@ -297,9 +322,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 </head>
 <body>
 
+<div class="floor" aria-hidden="true"></div>
 <main class="home" id="home">
   <section class="view title" id="titleView">
-    <img class="titleart" src="title.jpg" width="810" height="810" alt="Brick Slam · 브릭 슬램">
+    <div class="neontitle" role="img" aria-label="Brick Slam Beat · 브릭 슬램 비트">
+      <div class="sun" aria-hidden="true"></div>
+      <h1 aria-hidden="true"><span class="n1">BRICK</span><span class="n2">SLAM</span></h1>
+      <p class="sub" aria-hidden="true">BEAT</p>
+    </div>
     <div class="play">
       <button class="btn" id="startBtn" data-i18n="startBtn"></button>
       <button class="btn alt" id="rankBtn" data-i18n="rankBtn"></button>
@@ -425,7 +455,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // parts: chord progression [bass root, chord] per bar and a melody (one string per bar of 16 steps:
   // a MIDI note starts a note, '-' holds it, '.' is a rest); kinds: bar a special brick first appears
   const SONGS = [
-    { id: 'warm', name: { ko: '워밍업', en: 'Warm Up' }, bpm: 100, stars: 1, style: 'pop',
+    { id: 'warm', name: { ko: '워밍업', en: 'Warm Up' }, bpm: 100, stars: 1, style: 'house',
       parts: {
         verse: { prog: [[41, [53, 57, 60, 64]], [40, [52, 55, 59, 62]], [38, [50, 53, 57, 60]], [43, [50, 55, 59, 65]]],
           mel: ['69 - - . . . 67 - 69 - 72 - - . . .', '71 - - . . . 67 - 64 - - - . . . .',
@@ -474,7 +504,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     return out;
   }
   // tutorial: a slow, endless groove; bricks are placed by the tutorial steps instead of a chart
-  const TUT = { id: 'tut', name: { ko: '튜토리얼', en: 'Tutorial' }, bpm: 92, stars: 0, style: 'pop', tutorial: true,
+  const TUT = { id: 'tut', name: { ko: '튜토리얼', en: 'Tutorial' }, bpm: 92, stars: 0, style: 'house', tutorial: true,
     parts: { verse: { prog: SONGS[0].parts.verse.prog }, chorus: SONGS[0].parts.chorus },
     map: [[16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus']], kinds: {} };
   // expand each map into per-bar lists: chart pattern, music level, drop starts, part and bar within the part
@@ -505,12 +535,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const JUDGE_COL = ['#7df3ff', '#b9f58a', '#ff5a4e'];
   try { calib = (+localStorage.getItem('brickslam-calib') || 0) / 1000; } catch (e) {}
   // brick colors: [top highlight, face, side]
+  // neon: [white-hot core, tube color, dark glass]
   const KIND_COL = {
-    n: ['#f3966a', '#cf6339', '#7f3a20'],
-    gold: ['#ffe68f', '#f0b22e', '#94600f'],
-    stone: ['#b6b3c6', '#7e7b8f', '#45425a'],
-    bomb: ['#5d5779', '#35304a', '#17141f']
+    n: ['#ffd1ec', '#ff3fa4', '#3a0a2a'],
+    gold: ['#fff6c2', '#ffd84d', '#3d3006'],
+    stone: ['#e0deff', '#8f8cff', '#1c1a45'],
+    bomb: ['#ffc9cd', '#ff4d5e', '#2a070c']
   };
+  const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  let beatGlow = 0;   // 0..1, spikes on every beat; bricks and the floor of the board pulse with it
   // ---------- language ----------
   const I18N = {
     ko: {
@@ -733,7 +766,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (mode === 'game') {
           song = sg; feverOn = false;
           if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; dly.delayTime.value = 0.75 * 60 / song.bpm; }   // one bar of count-in
-        } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; }
+        } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; dly.delayTime.value = 0.75 * 60 / 116; }
         musLevel();
       },
       get musicMode() { return mode; },
@@ -754,7 +787,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       }
     };
 
-    // ---- music: calm 116 BPM title groove, and one procedural track per song ----
+    // ---- music: chill 116 BPM club groove on the title, and one procedural track per song ----
     let playing = false, mode = 'off', feverOn = false, step = 0, nextT = 0, song = null, songT0 = 0;
     const bpm = () => mode === 'game' && song ? song.bpm : 116;
     const MUS_VOL = 0.42;
@@ -820,14 +853,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
     function beat(i, t) {
       const d = mus;
-      if (mode === 'title') {         // calm title groove: soft kick, hats, bass, chords and a sparse lead
-        const s16 = i % 16, bar = Math.floor(i / 16) % 4, root = ROOTS[bar];
-        if (s16 === 0 || s16 === 8) tone(130, t, 0.18, { vol: 0.55, to: 45, dest: d });
-        if (s16 % 4 === 2) noise(t, 0.03, { vol: 0.1, freq: 8000, type: 'highpass', dest: d });
-        if (s16 % 4 === 0) tone(hz(root), t, 0.3, { type: 'triangle', vol: 0.2, dest: d });
-        if (s16 === 0 || s16 === 10) CHORD[bar].forEach(m => tone(hz(m), t, 0.5, { type: 'triangle', vol: 0.05, attack: 0.03, dest: d }));
+      if (mode === 'title') {         // chill neon groove: soft four-on-the-floor, pumping pad, off-beat bass, echoing lead
+        const s16 = i % 16, bar = Math.floor(i / 16) % 4, root = ROOTS[bar], sx = 15 / 116;
+        if (s16 % 4 === 0) kick(t, 0.5);
+        if (s16 % 4 === 2) hat(t, 0.07, true); else if (s16 % 2) hat(t, 0.025);
+        if (s16 === 4 || s16 === 12) clap(t, 0.06);
+        if (s16 % 4 === 2) voice(root, t, 1.5 * sx, { wave: 'sawtooth', cut: 420, env: 3, q: 2, vol: 0.16, pluck: true });
+        if (s16 === 0) CHORD[bar].forEach(m => voice(m, t, 15 * sx, { wave: 'sawtooth', det: 12, cut: 1000, att: 0.15, rel: 0.5, vol: 0.03, rev: 0.5 }));
         const ln = LEAD[bar % 2][s16];
-        if (ln && s16 % 4 === 0) tone(hz(ln), t, 0.35, { type: 'sine', vol: 0.1, dest: d });
+        if (ln && s16 % 4 === 0) voice(ln, t, 2 * sx, { wave: 'triangle', cut: 3000, vol: 0.07, pluck: true, dly: 0.35, rev: 0.3, dest: mus });
         return;
       }
       if (i < 0) {                    // count-in: four stick clicks
@@ -850,33 +884,39 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (s16 === 0 && (song.drop[bar] || (inP === 0 && lv > 0 && bar > 0))) crash(t);
       if (preDrop && s16 === 0) riser(t, 16 * sx);
       // ---- drums ----
-      const four = st !== 'pop' || lv === 2;
       const killLast = preDrop && s16 >= 12;                 // drop out the kick just before a drop
-      const wv = st === 'wave';
+      const wv = st === 'wave', hs = st === 'house';
       if (!killLast) {
-        if (lv === 0) { if (wv ? s16 % 4 === 0 : s16 === 0 || s16 === 8) kick(t, wv ? 0.7 : 0.6, wv); }
-        else if (four ? s16 % 4 === 0 : (s16 === 0 || s16 === 8 || s16 === 10)) kick(t, 0.95, wv);
+        if (lv === 0) { if (wv || hs ? s16 % 4 === 0 : s16 === 0 || s16 === 8) kick(t, wv ? 0.7 : 0.6, wv); }
+        else if (s16 % 4 === 0) kick(t, 0.95, true);   // four on the floor with a pumping sidechain
         if (wv && lv === 2 && s16 === 14 && song.inPart[bar] % 2 === 1) kick(t, 0.6, true);   // extra push into every other bar
       }
       if (lv > 0) {
         if (preDrop) { if (s16 % (s16 < 8 ? 4 : s16 < 12 ? 2 : 1) === 0) snare(t, 0.15 + 0.25 * s16 / 16); }
         else if (fill && s16 >= 12) snare(t, 0.3 + 0.05 * (s16 - 12));
-        else if (s16 === 4 || s16 === 12) { snare(t, 0.42, wv ? 0.25 : 0.2); if (lv === 2 || st === 'pop' || wv) clap(t, wv ? 0.2 : 0.12); }
+        else if (s16 === 4 || s16 === 12) {
+          if (hs) { clap(t, 0.3); snare(t, 0.16, 0.2); }
+          else { snare(t, 0.42, wv ? 0.25 : 0.2); if (lv === 2 || wv) clap(t, wv ? 0.2 : 0.12); }
+        }
       }
-      if (wv) {   // synthwave: open hat on every off-beat, a 16th shaker on top
+      if (hs) {   // house: open hat on the off-beat, soft 16ths in between
+        if (s16 % 4 === 2) hat(t, lv ? 0.18 : 0.1, true);
+        else if (lv > 0) hat(t, s16 % 2 ? 0.04 : 0.07);
+      }
+      else if (wv) {   // synthwave: open hat on every off-beat, a 16th shaker on top
         if (s16 % 4 === 2) hat(t, lv ? 0.17 : 0.1, true);
         else if (lv > 0) hat(t, s16 % 2 ? 0.05 : 0.08);
       }
       else if (lv === 0) { if (s16 % 4 === 2) hat(t, 0.07); }
       else if (st === 'euro') { if (s16 % 4 === 2) hat(t, 0.16, true); else if (hot || s16 % 2 === 0) hat(t, 0.06); }
-      else if (hot || st === 'pop') hat(t, s16 % 4 === 2 ? 0.16 : s16 % 2 ? 0.05 : 0.1);
+      else if (hot) hat(t, s16 % 4 === 2 ? 0.16 : s16 % 2 ? 0.05 : 0.1);
       else if (s16 % 2 === 0) hat(t, s16 % 4 === 2 ? 0.17 : 0.09);
       // ---- bass ----
-      if (lv === 0 && !wv) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
+      if (lv === 0 && !wv && !hs) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
       else if (lv === 0) { if (s16 % 4 === 2) voice(root, t, 1.6 * sx, { wave: 'sawtooth', cut: 380, env: 3, q: 2, vol: 0.16, pluck: true }); }
-      else if (st === 'pop') {
-        const BP = { 0: 0, 3: 12, 6: 0, 8: 0, 10: 7, 14: 12 };
-        if (s16 in BP) voice(root + BP[s16], t, (s16 === 0 ? 2.5 : 1.4) * sx, { wave: 'sawtooth', cut: 500, env: 4, q: 3, vol: 0.2, pluck: true });
+      else if (hs) {   // off-beat organ bass, with an octave ghost note in drops and Fever
+        if (s16 % 4 === 2) voice(root, t, 1.6 * sx, { wave: 'square', cut: 560, env: 4, q: 2, vol: 0.2, pluck: true });
+        else if (hot && s16 % 4 === 3) voice(root + 12, t, 0.8 * sx, { wave: 'sawtooth', cut: 900, env: 3, q: 2, vol: 0.1, pluck: true });
       } else if (st === 'wave') {
         if (s16 % 4 !== 0) voice(root + (lv === 2 && s16 % 4 === 3 ? 12 : 0), t, 0.9 * sx, { wave: 'sawtooth', det: 6, cut: 480, env: 5, q: 3, vol: 0.2, pluck: true });
       } else if (s16 % 2 === 0) {
@@ -886,26 +926,26 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (lv === 0 || st === 'wave') {
         if (s16 === 0) ch.forEach(m => voice(m, t, 15 * sx, { wave: 'sawtooth', det: 12, cut: lv === 0 ? 900 : 1300, att: 0.12, rel: 0.4, vol: st === 'wave' ? 0.026 : 0.035, rev: st === 'wave' ? 0.35 : 0.6 }));
         if (st === 'wave' && lv === 2 && s16 % 2 === 0) ch.forEach(m => voice(m + 12, t, 0.9 * sx, { wave: 'sawtooth', det: 8, cut: 2600, vol: 0.022, pluck: true }));
-      } else if (st === 'pop') {
-        // electric-piano stabs, pushed off the beat
-        if (s16 === 0 || s16 === 6 || s16 === 10) ch.forEach(m => voice(m + 12, t, (s16 === 0 ? 4 : 2.5) * sx, { wave: 'triangle', cut: 4000, vol: 0.045, pluck: true, rev: 0.3 }));
-      } else if (s16 % 4 === 2) {
-        ch.forEach(m => voice(m, t, 1.2 * sx, { wave: 'square', cut: 2200, env: 2, vol: 0.03, pluck: true }));
+      } else if (hs) {
+        // house piano stabs, syncopated
+        if (s16 === 3 || s16 === 6 || s16 === 10 || (lv === 2 && s16 === 13)) ch.forEach(m => voice(m + 12, t, 1.4 * sx, { wave: 'square', det: 5, cut: 3000, env: 2, vol: 0.032, pluck: true, rev: 0.3 }));
+      } else if (s16 % 4 === 2) {   // eurobeat: supersaw stabs on the off-beat
+        ch.forEach(m => voice(m, t, 1.2 * sx, { wave: 'sawtooth', det: 14, cut: 2600, env: 2, vol: 0.03, pluck: true, rev: 0.15 }));
       }
       // ---- lead ----
       if (pt.notes && lv > 0) {
         const nb = pt.notes[inP % pt.notes.length];
         for (const n of nb) if (n.step === s16) {
           const d = n.len * sx;
-          if (st === 'pop') voice(n.note, t, d * 0.9, { wave: 'square', det: 4, cut: 2600, env: 1.5, vol: 0.06, att: 0.01, rel: 0.12, rev: 0.35, dly: 0.12, dest: mus });
+          if (hs) voice(n.note, t, d * 0.9, { wave: 'sawtooth', det: 7, cut: 2600, env: 1.6, vol: 0.055, att: 0.01, rel: 0.12, rev: 0.3, dly: 0.3, dest: mus });
           else if (st === 'wave') voice(n.note, t, d * 0.95, { wave: 'sawtooth', det: 9, cut: 2800, env: 1.4, vol: 0.06, att: 0.01, rel: 0.15, rev: 0.3, dly: 0.35, dest: mus });
           else voice(n.note, t, d * 0.85, { wave: 'square', det: 7, cut: 3800, env: 1.3, vol: 0.055, rel: 0.08, rev: 0.15, dly: 0.25, dest: mus });
         }
       }
       // ---- arpeggio: drops and Fever, plus calm sparkle in the intro of synthwave/eurobeat songs ----
-      if (hot || (lv === 0 && st !== 'pop' && s16 % 2 === 0)) {
+      if (hot || (lv === 0 && s16 % 2 === 0)) {
         const seq = [0, 1, 2, 1], m = ch[seq[s16 % 4] % ch.length] + (s16 % 8 < 4 ? 12 : 24);
-        voice(m, t, 1.2 * sx, { wave: st === 'pop' ? 'triangle' : 'square', cut: 3500, vol: lv === 0 ? 0.025 : 0.03, pluck: true, dly: 0.2, dest: mus });
+        voice(m, t, 1.2 * sx, { wave: hs ? 'triangle' : 'square', cut: 3500, vol: lv === 0 ? 0.025 : 0.03, pluck: true, dly: 0.2, dest: mus });
       }
     }
     setInterval(() => {
@@ -1348,38 +1388,48 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const h = reduceMotion ? 300 : (now / 6) % 360;
       hi = `hsl(${h},95%,74%)`; mid = `hsl(${(h + 60) % 360},85%,58%)`; lo = `hsl(${(h + 60) % 360},65%,30%)`;
     } else [hi, mid, lo] = KIND_COL[type];
-    // drop shadow, side, top face
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(px + size * 0.03, py + size * 0.09, size, size, r); ctx.fill();
-    ctx.fillStyle = lo; rr(px, py, size, size, r); ctx.fill();
+    // neon tube: dark glass body, glowing outline, white-hot core line
+    const feverTint = type === 'n' && !over && fever();
+    if (feverTint) [hi, mid] = ['#fff6c2', C.fever];
+    const lw = Math.max(2, size * 0.075), inset = lw / 2;
+    ctx.save();
     let g;
     if (type === 'rain') {
       const h = reduceMotion ? 300 : (now / 6) % 360;
       g = ctx.createLinearGradient(px, py, px + size, py + size);
-      for (let i = 0; i <= 4; i++) g.addColorStop(i / 4, `hsl(${(h + i * 72) % 360},90%,64%)`);
+      for (let i = 0; i <= 4; i++) g.addColorStop(i / 4, `hsl(${(h + i * 72) % 360},95%,62%)`);
+      ctx.fillStyle = 'rgba(20,10,40,.75)';
     } else {
-      g = ctx.createLinearGradient(px, py, px, py + size * 0.86);
-      g.addColorStop(0, hi); g.addColorStop(1, mid);
+      const body = ctx.createLinearGradient(px, py, px, py + size);
+      body.addColorStop(0, hexA(mid, 0.38)); body.addColorStop(1, hexA(lo, 0.9));
+      ctx.fillStyle = body; g = mid;
     }
-    ctx.fillStyle = g; rr(px, py, size, size * 0.86, r); ctx.fill();
+    rr(px, py, size, size, r); ctx.fill();
+    ctx.shadowColor = type === 'rain' ? '#fff' : mid; ctx.shadowBlur = size * (0.14 + 0.22 * beatGlow);
+    ctx.strokeStyle = g; ctx.lineWidth = lw;
+    rr(px + inset, py + inset, size - lw, size - lw, Math.max(1, r - inset)); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.strokeStyle = type === 'rain' ? 'rgba(255,255,255,.85)' : hi; ctx.lineWidth = Math.max(1, lw * 0.32);
+    ctx.globalAlpha = 0.65 + 0.35 * beatGlow;
+    rr(px + inset, py + inset, size - lw, size - lw, Math.max(1, r - inset)); ctx.stroke();
+    ctx.restore();
     if (size > 12) {
-      ctx.fillStyle = 'rgba(255,255,255,.24)'; rr(px + size * 0.12, py + size * 0.07, size * 0.76, size * 0.13, size * 0.065); ctx.fill();
       const cx = px + size / 2, cy = py + size * 0.47;
       if (type === 'n') {
-        ctx.fillStyle = 'rgba(127,58,32,.55)';
-        ctx.fillRect(px + size * 0.1, py + size * 0.42, size * 0.8, Math.max(1, size * 0.05));
-        ctx.fillRect(px + size * 0.475, py + size * 0.42, Math.max(1, size * 0.05), size * 0.36);
+        ctx.save(); ctx.globalAlpha = 0.35 + 0.5 * beatGlow; ctx.strokeStyle = mid; ctx.lineWidth = Math.max(1, size * 0.03);
+        ctx.shadowColor = mid; ctx.shadowBlur = 6;
+        rr(px + size * 0.3, py + size * 0.3, size * 0.4, size * 0.4, size * 0.06); ctx.stroke(); ctx.restore();
       } else if (type === 'gold') {
         const tw = reduceMotion ? 1 : 0.85 + 0.15 * Math.sin(now / 180 + x * 3 + y);
-        ctx.fillStyle = '#fff7d6'; starPath(cx, cy, size * 0.22 * tw, size * 0.1 * tw); ctx.fill();
-        ctx.strokeStyle = 'rgba(148,96,15,.5)'; ctx.lineWidth = Math.max(1, size * 0.025); ctx.stroke();
+        ctx.save(); ctx.shadowColor = mid; ctx.shadowBlur = 10;
+        ctx.fillStyle = '#fff7d6'; starPath(cx, cy, size * 0.22 * tw, size * 0.1 * tw); ctx.fill(); ctx.restore();
       } else if (type === 'stone') {
-        ctx.strokeStyle = 'rgba(30,28,42,.55)'; ctx.lineWidth = Math.max(1, size * 0.04); ctx.lineCap = 'round';
+        ctx.strokeStyle = hexA(mid, 0.7); ctx.lineWidth = Math.max(1, size * 0.04); ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(px + size * 0.2, py + size * 0.33); ctx.lineTo(px + size * 0.42, py + size * 0.33);
         ctx.moveTo(px + size * 0.58, py + size * 0.6); ctx.lineTo(px + size * 0.8, py + size * 0.6);
         ctx.stroke();
         if (b && b.hp < 2) {   // cracked: one more slam breaks it
-          ctx.strokeStyle = '#1b1926'; ctx.lineWidth = Math.max(1.5, size * 0.045);
+          ctx.strokeStyle = hi; ctx.lineWidth = Math.max(1.5, size * 0.045); ctx.shadowColor = mid; ctx.shadowBlur = 8;
           ctx.beginPath();
           ctx.moveTo(px + size * 0.5, py + size * 0.06); ctx.lineTo(px + size * 0.42, py + size * 0.3);
           ctx.lineTo(px + size * 0.56, py + size * 0.46); ctx.lineTo(px + size * 0.46, py + size * 0.72);
@@ -1457,11 +1507,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (shake > 0.3 && !reduceMotion) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     // board panel and cells
     const P = Math.max(4, cell * 0.06);
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 8;
+    ctx.save(); ctx.shadowColor = 'rgba(138,77,255,.5)'; ctx.shadowBlur = 34;
     ctx.fillStyle = C.board; rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.fill(); ctx.restore();
-    ctx.fillStyle = '#262139';
-    for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) {
-      rr(M + gx * cell + cell * 0.05, M + gy * cell + cell * 0.05, cell * 0.9, cell * 0.9, Math.min(10, cell * 0.12)); ctx.fill();
+    // cells: faint neon outlines that brighten a little on each beat
+    {
+      const bp0 = sp / song.spb, p0 = over ? 0 : Math.exp(-(bp0 - Math.floor(bp0)) * 7);
+      ctx.save(); ctx.fillStyle = 'rgba(138,77,255,.05)'; ctx.strokeStyle = hexA(isFever ? C.fever : '#8a4dff', 0.22 + 0.25 * p0); ctx.lineWidth = 1.5;
+      for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) {
+        rr(M + gx * cell + cell * 0.05, M + gy * cell + cell * 0.05, cell * 0.9, cell * 0.9, Math.min(10, cell * 0.12)); ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
     }
     if (isFever) {
       ctx.save(); ctx.globalAlpha = 0.1 + (reduceMotion ? 0 : 0.05 * Math.sin(now / 200)); ctx.fillStyle = C.fever;
@@ -1476,6 +1531,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     for (let d = 0; d < 4; d++) drawBar(d, now, isFever);
     // beat: ph runs 0..1 between beats; the four empty corners show rings closing on a dot at each beat
     const beatPos = sp / song.spb, ph = beatPos - Math.floor(beatPos), pulse = over ? 0 : Math.exp(-ph * 7);
+    beatGlow = reduceMotion ? 0.3 : pulse;
     if (!over) {
       const downbeat = ((Math.floor(beatPos) % 4) + 4) % 4 === 0;
       ctx.save();
@@ -1540,7 +1596,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     for (const p of pops) {
       ctx.globalAlpha = Math.max(0, p.life);
       ctx.font = `${Math.min(28, Math.max(12, cell * (p.small ? 0.22 : 0.3)))}px ${disp}`;
-      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(15,12,25,.7)';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(7,5,15,.75)';
       const yy = p.y - (1 - p.life) * Math.min(60, cell * 0.6);
       ctx.strokeText(p.text, p.x, yy);
       ctx.fillStyle = p.c || (p.hot ? C.fever : C.ink);
@@ -1568,7 +1624,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const pop = reduceMotion ? 1 : 1 + 0.25 * Math.max(0, 1 - age / 0.12);
       const hgt = Math.max(70, cell * (banner.sub ? 1.5 : 1.1));
       ctx.save(); ctx.globalAlpha = a;
-      ctx.fillStyle = 'rgba(15,12,25,.82)'; ctx.fillRect(0, S / 2 - hgt / 2, S, hgt);
+      ctx.fillStyle = 'rgba(7,5,15,.85)'; ctx.fillRect(0, S / 2 - hgt / 2, S, hgt);
       ctx.fillStyle = C.glow; ctx.fillRect(0, S / 2 - hgt / 2, S, 2); ctx.fillRect(0, S / 2 + hgt / 2 - 2, S, 2);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${Math.round(Math.min(46, cell * 0.5) * pop)}px ${disp}`;
@@ -1645,6 +1701,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('tutBox').hidden = true;
     $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
     document.body.classList.add('playing');
+    document.documentElement.style.setProperty('--beat', song.spb + 's');
     window.scrollTo(0, 0);
     reset();
     showBest();
@@ -1663,6 +1720,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
     document.body.classList.remove('playing');
+    document.documentElement.style.removeProperty('--beat');
     $('rankList').after($('nickRow'));
     showView('titleView');
     showBest();
