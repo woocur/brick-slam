@@ -505,7 +505,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
       how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
-      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 판 아래 줄의 노트가 왼쪽 원에 닿는 순간 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
+      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 벽돌을 둘러싼 링이 줄어들어 벽돌에 딱 닿는 순간(판 아래 노트가 왼쪽 원에 닿을 때) 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
       how3t: '벽 충전과 피버', how3: '부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차서 빛나는 바를 누르면 피버, 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
       how4t: '곡과 특수 벽돌', how4: '곡이 끝날 때까지 버티면 클리어. 어려운 곡일수록 특수 벽돌이 많이 나와요.',
       kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
@@ -533,7 +533,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
       how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
-      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment a note in the lane below the board reaches the ring on the left for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
+      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the shrinking ring lands on the brick (when a note in the lane below hits the left ring) for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
       how3t: 'Charge and Fever', how3: 'Each slam fills that wall\'s bar. Tap a full, glowing bar for Fever and double points. Tap another glowing bar during Fever to raise the multiplier.',
       how4t: 'Songs and special bricks', how4: 'Survive until the song ends to clear it. Harder songs bring more special bricks.',
       kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
@@ -1418,6 +1418,18 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
       if (b.bump && !reduceMotion) { const q = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * q; by += DIRS[b.bump.d].dy * q; }
       drawBrick(bx, by, Math.max(0, sc), b, now, b === aimed);
+      // note on the brick: a ring shrinks onto its edge and lands exactly on each beat
+      if (!over && sp > -3 * song.spb && k >= 1) {
+        const size = cell * 0.86, g = 1 + 0.35 * (1 - ph), w = size * g, r = Math.min(14, size * 0.18) * g;
+        const cx = M + (bx + 0.5) * cell, cy = M + (by + 0.5) * cell;
+        ctx.save();
+        ctx.globalAlpha = pulse > 0.4 ? 0.9 * pulse : 0.12 + 0.6 * ph;
+        ctx.strokeStyle = pulse > 0.4 ? C.glow : isFever ? C.fever : C.ink;
+        ctx.lineWidth = 2 + 3 * pulse;
+        if (pulse > 0.4) { ctx.shadowColor = C.glow; ctx.shadowBlur = 16 * pulse; }
+        rr(cx - w / 2, cy - w / 2, w, w, r); ctx.stroke();
+        ctx.restore();
+      }
     }
     for (const m of moving) drawBrick(m.fx, m.fy, 1, m, now, false);
     for (const p of parts) {
