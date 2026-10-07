@@ -194,6 +194,9 @@ body.playing .floor { height: 34vh; opacity: .7; }
 .songs small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .songs small:last-child { text-align: right; }
 .songs .tutpick { border-style: dashed; }
+.songs .lv { font-family: var(--display); font-size: 16px; letter-spacing: .02em; text-shadow: 0 0 8px rgba(46, 242, 255, .6); }
+#diffTabs button[data-d="0"][aria-pressed="true"] { color: #b9f58a; }
+#diffTabs button[data-d="2"][aria-pressed="true"] { color: var(--hot); }
 .songs .tutpick .stars { color: var(--fever); font-size: 12px; letter-spacing: 0; }
 .judges { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
 .judges b { color: var(--ink); font-weight: 600; }
@@ -357,6 +360,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         <div class="kinds"><span><i class="k-gold"></i><em data-i18n="kGold"></em></span><span><i class="k-stone"></i><em data-i18n="kStone"></em></span><span><i class="k-bomb"></i><em data-i18n="kBomb"></em></span><span><i class="k-rain"></i><em data-i18n="kRain"></em></span></div></div></li>
     </ol>
     <p class="end" data-i18n-html="howEnd"></p>
+    <div class="sizepick">
+      <span data-i18n="diffLabel"></span>
+      <div class="tabs" role="group" data-i18n-aria="diffLabel" id="diffTabs">
+        <button data-d="0" data-i18n-diff="0"></button><button data-d="1" data-i18n-diff="1"></button><button data-d="2" data-i18n-diff="2"></button>
+      </div>
+    </div>
     <div class="songs" id="songs" role="radiogroup" data-i18n-aria="songPick"></div>
     <div class="sizepick">
       <span data-i18n="boardSize"></span>
@@ -450,8 +459,31 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     t: [1, 0, 0, 0, 1, 0, 1, 0],
     q: [1, 0, 1, 0, 1, 0, 1, 0],
     s: [1, 0, 1, 0, 1, 0, 1, 1],
-    d: [2, 0, 0, 0, 1, 0, 1, 0]
+    d: [2, 0, 0, 0, 1, 0, 1, 0],
+    x: [1, 0, 1, 1, 1, 0, 1, 1],
+    D: [2, 0, 1, 0, 2, 0, 1, 0]
   };
+  // difficulty: each song's map is the normal chart; easy and hard swap every bar pattern one step lighter or denser
+  const DIFF_PAT = [
+    { t: 'h', q: 't', s: 'q', d: 't' },
+    null,
+    { h: 't', t: 'q', q: 's', s: 'x', d: 'D' }
+  ];
+  let diff = 1;
+  try { const v = localStorage.getItem('brickslam-diff'); if (v !== null) diff = Math.max(0, Math.min(2, +v || 0)); } catch (e) {}
+  const chartPat = (s, bar) => { const p = s.pat[bar], m = DIFF_PAT[s.tutorial ? 1 : diff]; return (m && m[p]) || p; };
+  // special bricks: easy keeps only gold and stone and brings them in later; hard brings everything in 4 bars sooner
+  function kindsFor(s) {
+    const out = {};
+    for (const k in s.kinds) {
+      const b = s.kinds[k];
+      if (diff === 0) { if (k === 'gold' || k === 'stone') out[k] = b + 8; }
+      else out[k] = diff === 2 && b > 0 ? Math.max(1, b - 4) : b;
+    }
+    return out;
+  }
+  // level shown in the song list: 1 (easiest) and up
+  const songLv = (s, d) => s.stars * 2 + d - 1;
   // map: [bars, bar patterns (cycled), music level 0 calm / 1 full / 2 drop, song part]
   // parts: chord progression [bass root, chord] per bar and a melody (one string per bar of 16 steps:
   // a MIDI note starts a note, '-' holds it, '.' is a rest); kinds: bar a special brick first appears
@@ -492,7 +524,25 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         intro: { prog: [[38, [62, 65, 69]], [34, [58, 62, 65]], [36, [60, 64, 67]], [33, [61, 64, 69]]] }
       },
       map: [[4, 't', 0, 'intro'], [8, 'qt', 1, 'verse'], [8, 'qs', 1, 'verse'], [4, 'h', 0, 'intro'], [12, 'sd', 2, 'chorus'], [8, 'tq', 1, 'verse'], [8, 's', 2, 'chorus']],
-      kinds: { gold: 0, stone: 4, bomb: 12, rain: 24 } }
+      kinds: { gold: 0, stone: 4, bomb: 12, rain: 24 } },
+    { id: 'fire', name: { ko: '불꽃놀이', en: 'Fireworks' }, bpm: 132, stars: 2, style: 'edm',
+      parts: {
+        intro: { prog: [[45, [57, 60, 64]], [41, [57, 60, 65]], [48, [55, 60, 64]], [43, [55, 59, 62]]] },
+        verse: { prog: [[48, [55, 60, 64]], [43, [55, 59, 62]], [45, [57, 60, 64]], [41, [57, 60, 65]]],
+          mel: ['72 . 72 . 74 . 76 - 79 - 76 . 74 . 72 .', '74 . 74 . 76 . 79 - 81 - 79 . 76 . 74 .',
+                '76 . 76 . 79 . 81 - 84 - 81 . 79 . 76 .', '77 - 76 - 74 - 72 - 74 - - - . . . .'] },
+        build: { prog: [[41, [57, 60, 65]], [43, [55, 59, 62]], [45, [57, 60, 64]], [43, [55, 59, 62]]],
+          mel: ['72 . 72 . 72 . 72 . 74 . 74 . 74 . 74 .', '74 . 74 . 74 . 74 . 76 . 76 . 76 . 76 .',
+                '76 . 76 . 76 . 76 . 79 . 79 . 79 . 79 .', '79 - 81 - 83 - 84 - - - - - . . . .'] },
+        drop: { prog: [[45, [57, 60, 64]], [41, [57, 60, 65]], [48, [55, 60, 64]], [43, [55, 59, 62]]],
+          mel: ['81 . 81 . 84 . 81 . 79 . 76 . 79 - 81 .', '81 . 81 . 84 . 81 . 86 - 84 - 81 - . .',
+                '79 . 79 . 84 . 79 . 76 . 74 . 76 - 79 .', '79 . 81 . 83 . 86 - - - 83 - 81 - 79 -'] },
+        break: { prog: [[41, [57, 60, 65]], [43, [55, 59, 62]], [45, [57, 60, 64]], [43, [55, 59, 62]]] },
+        outro: { prog: [[45, [57, 60, 64]], [41, [57, 60, 65]], [48, [55, 60, 64]], [43, [55, 59, 62]]] }
+      },
+      map: [[4, 'h', 0, 'intro'], [16, 'ht', 1, 'verse'], [4, 'tq', 1, 'build'], [16, 'qs', 2, 'drop'], [4, 'hr', 0, 'break'],
+            [4, 'tq', 1, 'build'], [12, 'sq', 2, 'drop'], [4, 't', 1, 'outro']],
+      kinds: { gold: 4, stone: 20, rain: 28 } }
   ];
   // parse a melody bar into [{ step, note, len }]
   function parseBar(str) {
@@ -531,7 +581,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   let over = true, selected = null, drag = null, hover = null, last = performance.now();
   // rhythm state: sp = song position in seconds as heard (negative during the count-in)
   let song = SONGS[0], sp = 0, slotNext = 0, cleared = false, judges = [0, 0, 0], maxCombo = 0, calib = 0;
-  let combo = 0, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false;
+  let combo = 0, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false, kinds = {};
   const KINDS = { gold: 'newGold', stone: 'newStone', bomb: 'newBomb', rain: 'newRain' };
   const JUDGE_COL = ['#7df3ff', '#b9f58a', '#ff5a4e'];
   try { calib = (+localStorage.getItem('brickslam-calib') || 0) / 1000; } catch (e) {}
@@ -562,6 +612,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       howEnd: '곡이 끝나기 전에 판이 <b>꽉 차면</b> 실패예요.',
+      diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움'],
       songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutPick: '처음이라면 여기부터', tutInfo: '따라 하며 배우기', tutDone: '완료 ✓',
       tut: [
@@ -600,6 +651,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       howEnd: 'If the board <b>fills up</b> before the song ends, you fail.',
+      diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard'],
       songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutPick: 'Start here', tutInfo: 'Learn by playing', tutDone: 'Done ✓',
       tut: [
@@ -644,7 +696,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   $('langSw').addEventListener('click', () => applyLang(lang === 'ko' ? 'en' : 'ko'));
 
   // personal bests are kept per song and board size
-  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n;
+  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n + ['-easy', '', '-hard'][diff];
   function getBest(s, n) { try { return +localStorage.getItem(bestKey(s, n)) || 0; } catch (e) { return 0; } }
   let best = 0;
   function showBest() {
@@ -886,23 +938,26 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (preDrop && s16 === 0) riser(t, 16 * sx);
       // ---- drums ----
       const killLast = preDrop && s16 >= 12;                 // drop out the kick just before a drop
-      const wv = st === 'wave', hs = st === 'house';
-      if (!killLast) {
-        if (lv === 0) { if (wv || hs ? s16 % 4 === 0 : s16 === 0 || s16 === 8) kick(t, wv ? 0.7 : 0.6, wv); }
+      const wv = st === 'wave', hs = st === 'house', ed = st === 'edm';
+      const bld = ed && song.part[bar] === 'build', brk = ed && song.part[bar] === 'break';
+      if (bld && inP === 0 && s16 === 0) riser(t, 48 * sx);   // EDM build: a long sweep up to the last bar's roll
+      if (!killLast && !brk) {
+        if (lv === 0) { if (wv || hs || ed ? s16 % 4 === 0 : s16 === 0 || s16 === 8) kick(t, wv ? 0.7 : 0.6, wv); }
         else if (s16 % 4 === 0) kick(t, 0.95, true);   // four on the floor with a pumping sidechain
         if (wv && lv === 2 && s16 === 14 && song.inPart[bar] % 2 === 1) kick(t, 0.6, true);   // extra push into every other bar
       }
       if (lv > 0) {
         if (preDrop) { if (s16 % (s16 < 8 ? 4 : s16 < 12 ? 2 : 1) === 0) snare(t, 0.15 + 0.25 * s16 / 16); }
+        else if (bld) { if (s16 % [4, 4, 2][inP] === 0) snare(t, 0.12 + 0.06 * inP); }   // snare roll speeding up
         else if (fill && s16 >= 12) snare(t, 0.3 + 0.05 * (s16 - 12));
         else if (s16 === 4 || s16 === 12) {
-          if (hs) { clap(t, 0.3); snare(t, 0.16, 0.2); }
+          if (hs || ed) { clap(t, ed ? 0.36 : 0.3); snare(t, ed ? 0.24 : 0.16, 0.2); }
           else { snare(t, 0.42, wv ? 0.25 : 0.2); if (lv === 2 || wv) clap(t, wv ? 0.2 : 0.12); }
         }
       }
-      if (hs) {   // house: open hat on the off-beat, soft 16ths in between
+      if (hs || ed) {   // house / EDM: open hat on the off-beat, soft 16ths in between
         if (s16 % 4 === 2) hat(t, lv ? 0.18 : 0.1, true);
-        else if (lv > 0) hat(t, s16 % 2 ? 0.04 : 0.07);
+        else if (lv > 0) hat(t, s16 % 2 ? (ed && lv === 2 ? 0.07 : 0.04) : 0.07);
       }
       else if (wv) {   // synthwave: open hat on every off-beat, a 16th shaker on top
         if (s16 % 4 === 2) hat(t, lv ? 0.17 : 0.1, true);
@@ -913,9 +968,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       else if (hot) hat(t, s16 % 4 === 2 ? 0.16 : s16 % 2 ? 0.05 : 0.1);
       else if (s16 % 2 === 0) hat(t, s16 % 4 === 2 ? 0.17 : 0.09);
       // ---- bass ----
-      if (lv === 0 && !wv && !hs) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
+      if (lv === 0 && !wv && !hs && !ed) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
       else if (lv === 0) { if (s16 % 4 === 2) voice(root, t, 1.6 * sx, { wave: 'sawtooth', cut: 380, env: 3, q: 2, vol: 0.16, pluck: true }); }
-      else if (hs) {   // off-beat organ bass, with an octave ghost note in drops and Fever
+      else if (ed && lv === 2) {   // EDM drop: rolling bass between the kicks, jumping an octave on the off-beat
+        if (s16 % 4 !== 0) voice(root + (s16 % 4 === 2 ? 12 : 0), t, 0.9 * sx, { wave: 'sawtooth', det: 8, cut: 700, env: 5, q: 3, vol: 0.19, pluck: true });
+      }
+      else if (hs || ed) {   // off-beat organ bass, with an octave ghost note in drops and Fever
         if (s16 % 4 === 2) voice(root, t, 1.6 * sx, { wave: 'square', cut: 560, env: 4, q: 2, vol: 0.2, pluck: true });
         else if (hot && s16 % 4 === 3) voice(root + 12, t, 0.8 * sx, { wave: 'sawtooth', cut: 900, env: 3, q: 2, vol: 0.1, pluck: true });
       } else if (st === 'wave') {
@@ -927,6 +985,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (lv === 0 || st === 'wave') {
         if (s16 === 0) ch.forEach(m => voice(m, t, 15 * sx, { wave: 'sawtooth', det: 12, cut: lv === 0 ? 900 : 1300, att: 0.12, rel: 0.4, vol: st === 'wave' ? 0.026 : 0.035, rev: st === 'wave' ? 0.35 : 0.6 }));
         if (st === 'wave' && lv === 2 && s16 % 2 === 0) ch.forEach(m => voice(m + 12, t, 0.9 * sx, { wave: 'sawtooth', det: 8, cut: 2600, vol: 0.022, pluck: true }));
+      } else if (ed) {
+        // EDM: off-beat supersaw stabs, then a big syncopated chord riff in the drops
+        if (lv === 2 ? [0, 3, 6, 8, 11, 14].includes(s16) : s16 % 4 === 2)
+          ch.forEach(m => voice(m + 12, t, (lv === 2 ? 1.8 : 1.2) * sx, { wave: 'sawtooth', det: 16, cut: lv === 2 ? 3800 : 2600, env: 2, vol: lv === 2 ? 0.032 : 0.026, pluck: true, rev: 0.2 }));
       } else if (hs) {
         // house piano stabs, syncopated
         if (s16 === 3 || s16 === 6 || s16 === 10 || (lv === 2 && s16 === 13)) ch.forEach(m => voice(m + 12, t, 1.4 * sx, { wave: 'square', det: 5, cut: 3000, env: 2, vol: 0.032, pluck: true, rev: 0.3 }));
@@ -939,6 +1001,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         for (const n of nb) if (n.step === s16) {
           const d = n.len * sx;
           if (hs) voice(n.note, t, d * 0.9, { wave: 'sawtooth', det: 7, cut: 2600, env: 1.6, vol: 0.055, att: 0.01, rel: 0.12, rev: 0.3, dly: 0.3, dest: mus });
+          else if (ed) {
+            voice(n.note, t, d * 0.9, { wave: 'sawtooth', det: 14, cut: 4200, env: 1.5, vol: 0.055, att: 0.005, rel: 0.1, rev: 0.25, dly: 0.2, dest: mus });
+            if (lv === 2) voice(n.note + 12, t, d * 0.9, { wave: 'square', cut: 5000, vol: 0.018, att: 0.005, rel: 0.1, rev: 0.2, dest: mus });
+          }
           else if (st === 'wave') voice(n.note, t, d * 0.95, { wave: 'sawtooth', det: 9, cut: 2800, env: 1.4, vol: 0.06, att: 0.01, rel: 0.15, rev: 0.3, dly: 0.35, dest: mus });
           else voice(n.note, t, d * 0.85, { wave: 'square', det: 7, cut: 3800, env: 1.3, vol: 0.055, rel: 0.08, rev: 0.15, dly: 0.25, dest: mus });
         }
@@ -1018,7 +1084,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       for (const j of [2 * k, 2 * k + 1]) {
         if (j < 0) continue;
         const bar = Math.floor(j / 8);
-        const n = bar < song.bars ? PAT[song.pat[bar]][j % 8] : 0;
+        const n = bar < song.bars ? PAT[chartPat(song, bar)][j % 8] : 0;
         for (let i = 0; i < n; i++) {
           const sx = x + (j % 2) * px / 2;
           lctx.globalAlpha = fade * 0.9; lctx.fillStyle = KIND_COL.n[1];
@@ -1042,7 +1108,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     selected = null; drag = null; hover = null; over = false;
     combo = 0; banner = null; shake = 0; rings = []; forceType = null; lastJ = null;
     feverShown = false; shownCombo = 0; $('game').classList.remove('fever'); $('combo').classList.remove('on');
-    $('lvl').textContent = song.name[lang];
+    kinds = kindsFor(song);
+    $('lvl').textContent = song.tutorial ? song.name[lang] : song.name[lang] + ' · ' + t('diffs')[diff];
     layout(); hud(); hudSong();
   }
 
@@ -1050,7 +1117,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function pickType(bar) {
     if (forceType) { const k = forceType; forceType = null; return k; }
-    const k = song.kinds, has = x => x in k && bar >= k[x];
+    const k = kinds, has = x => x in k && bar >= k[x];
     const odds = [
       ['gold', has('gold') ? 0.08 : 0],
       ['stone', has('stone') ? 0.14 + (song.lvl[bar] === 2 ? 0.06 : 0) : 0],
@@ -1113,12 +1180,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (bar >= song.bars) return;
     if (tut) { if (s8 % 2 === 0) tutBeat(bar); return; }
     if (s8 === 0) {
-      const fresh = Object.keys(song.kinds).find(x => song.kinds[x] === bar && bar > 0);
+      const fresh = Object.keys(kinds).find(x => kinds[x] === bar && bar > 0);
       if (fresh) { forceType = fresh; banner = { title: t(KINDS[fresh]), sub: '', life: 1 }; }
       else if (song.drop[bar]) banner = { title: t('drop'), sub: '', life: 0.7 };
     }
     const now = performance.now();
-    for (let i = 0; i < PAT[song.pat[bar]][s8] && !over; i++) spawn(now, bar);
+    for (let i = 0; i < PAT[chartPat(song, bar)][s8] && !over; i++) spawn(now, bar);
   }
 
   const fever = () => sp < feverUntil;
@@ -1758,7 +1825,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const b = document.createElement('button');
       b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === pickSong);
       const nm = document.createElement('b'); nm.textContent = sg.name[lang];
-      const st = document.createElement('span'); st.className = 'stars'; st.textContent = '★'.repeat(sg.stars) + '☆'.repeat(3 - sg.stars);
+      const st = document.createElement('span'); st.className = 'stars lv'; st.textContent = 'Lv.' + songLv(sg, diff);
       const bp = document.createElement('small'); bp.textContent = sg.bpm + ' BPM · ' + Math.round(sg.len) + 's';
       const bs = document.createElement('small'); const v = getBest(sg, pickSize); bs.textContent = t('songBest', v ? v.toLocaleString() : 0);
       b.append(nm, st, bp, bs);
@@ -1771,6 +1838,17 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     });
   }
   langHooks.push(renderSongs);
+  function setDiff(d) {
+    diff = d;
+    try { localStorage.setItem('brickslam-diff', d); } catch (e) {}
+    document.querySelectorAll('#diffTabs button').forEach(b => {
+      b.textContent = t('diffs')[+b.dataset.d]; b.setAttribute('aria-pressed', +b.dataset.d === d);
+    });
+    showBest(); renderSongs();
+  }
+  document.querySelectorAll('#diffTabs button').forEach(b => b.addEventListener('click', () => setDiff(+b.dataset.d)));
+  langHooks.push(() => setDiff(diff));
+  setDiff(diff);
   setSize(pickSize);
   $('size4').addEventListener('click', () => setSize(4));
   $('size5').addEventListener('click', () => setSize(5));
