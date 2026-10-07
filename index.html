@@ -230,8 +230,9 @@ button { touch-action: manipulation; }
 .lvrow .combo.on { opacity: 1; }
 .feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .feverbar i { display: block; height: 100%; width: 0; background: var(--fever); }
-.stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
+.lane { display: block; flex: none; }
 .hint { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
 .hint .keys { display: none; }
 @media (hover: hover) and (pointer: fine) { .hint .keys { display: inline; } }
@@ -361,6 +362,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
+    <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <div class="overlay" id="overOv" hidden>
       <div class="card">
         <h2 id="overTitle" data-i18n="overTitle"></h2>
@@ -384,6 +386,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 (() => {
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane under the board
   const css = getComputedStyle(document.documentElement);
   const C = {};
   ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
@@ -459,7 +462,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
       how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
-      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 네 귀퉁이의 원이 점에 닿는 순간 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
+      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 판 아래 줄의 노트가 왼쪽 원에 닿는 순간 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
       how3t: '벽 충전과 피버', how3: '부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차서 빛나는 바를 누르면 피버, 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
       how4t: '곡과 특수 벽돌', how4: '곡이 끝날 때까지 버티면 클리어. 어려운 곡일수록 특수 벽돌이 많이 나와요.',
       kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
@@ -487,7 +490,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
       how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
-      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the corner rings close on their dots for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
+      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment a note in the lane below the board reaches the ring on the left for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
       how3t: 'Charge and Fever', how3: 'Each slam fills that wall\'s bar. Tap a full, glowing bar for Fever and double points. Tap another glowing bar during Fever to raise the multiplier.',
       how4t: 'Songs and special bricks', how4: 'Survive until the song ends to clear it. Harder songs bring more special bricks.',
       kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
@@ -757,7 +760,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function layout() {
     const r = stage.getBoundingClientRect();
-    S = Math.max(200, Math.floor(Math.min(r.width, r.height)));
+    S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12)));
     M = Math.max(30, Math.round(S * 0.085));
     B = S - 2 * M;
     cell = B / N;
@@ -765,6 +768,51 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     cv.width = S * dpr; cv.height = S * dpr;
     cv.style.width = cv.style.height = S + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lane.width = S * dpr; lane.height = LH * dpr;
+    lane.style.width = S + 'px'; lane.style.height = LH + 'px';
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // note lane: every beat is a note sliding left into the hit ring; orange squares above mark bricks about to drop
+  let lastJ = null;
+  function drawLane(now) {
+    const W = S, cy = LH / 2 + 6, hx = Math.round(W * 0.14), AHEAD = 5;
+    const px = (W - hx - 14) / AHEAD, bp = sp / song.spb;
+    lctx.clearRect(0, 0, W, LH);
+    if (over && !grid) return;
+    lctx.fillStyle = C.line;
+    lctx.beginPath(); lctx.roundRect ? lctx.roundRect(4, cy - 9, W - 8, 18, 9) : lctx.rect(4, cy - 9, W - 8, 18); lctx.fill();
+    // hit ring: lights up on the beat and flashes the last judgement's color
+    const ph = bp - Math.floor(bp), pulse = over ? 0 : Math.exp(-ph * 7);
+    const jAge = lastJ ? (now - lastJ.t) / 300 : 1;
+    lctx.save();
+    lctx.strokeStyle = jAge < 1 ? JUDGE_COL[lastJ.j] : C.glow; lctx.lineWidth = 3;
+    lctx.shadowColor = lctx.strokeStyle; lctx.shadowBlur = 6 + 14 * Math.max(pulse, jAge < 1 ? 1 - jAge : 0);
+    lctx.beginPath(); lctx.arc(hx, cy, 14, 0, Math.PI * 2); lctx.stroke();
+    lctx.restore();
+    const end = song.bars * 4;
+    for (let k = Math.floor(bp) - 1; k <= Math.ceil(bp + AHEAD); k++) {
+      if (k < -3 || k >= end) continue;
+      const x = hx + (k - bp) * px;
+      if (x < 4 || x > W - 6) continue;
+      const fade = x < hx ? Math.max(0, 1 - (hx - x) / (px * 0.7)) : 1;
+      // bricks dropping on this beat or the 8th after it
+      for (const j of [2 * k, 2 * k + 1]) {
+        if (j < 0) continue;
+        const bar = Math.floor(j / 8);
+        const n = bar < song.bars ? PAT[song.pat[bar]][j % 8] : 0;
+        for (let i = 0; i < n; i++) {
+          const sx = x + (j % 2) * px / 2;
+          lctx.globalAlpha = fade * 0.9; lctx.fillStyle = KIND_COL.n[1];
+          lctx.beginPath(); lctx.roundRect ? lctx.roundRect(sx - 4, cy - 24 - i * 9, 8, 8, 2) : lctx.rect(sx - 4, cy - 24 - i * 9, 8, 8); lctx.fill();
+        }
+      }
+      const down = ((k % 4) + 4) % 4 === 0, r = k < 0 ? 4 : down ? 8 : 6;
+      lctx.globalAlpha = fade;
+      lctx.fillStyle = k < 0 ? C.muted : down ? C.glow : C.ink;
+      lctx.beginPath(); lctx.arc(x, cy, r, 0, Math.PI * 2); lctx.fill();
+    }
+    lctx.globalAlpha = 1;
   }
 
   function reset() {
@@ -774,7 +822,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     score = 0; mult = 1; feverUntil = -1e9; feverTotal = 1; flash = 0;
     sp = -4 * song.spb - 0.1; slotNext = 0; cleared = false; judges = [0, 0, 0]; maxCombo = 0;
     selected = null; drag = null; hover = null; over = false;
-    combo = 0; banner = null; shake = 0; rings = []; forceType = null;
+    combo = 0; banner = null; shake = 0; rings = []; forceType = null; lastJ = null;
     feverShown = false; shownCombo = 0; $('game').classList.remove('fever'); $('combo').classList.remove('on');
     $('lvl').textContent = song.name[lang];
     layout(); hud(); hudSong();
@@ -841,6 +889,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     combo = j < 2 ? combo + 1 : 0;
     maxCombo = Math.max(maxCombo, combo);
     if (j === 2) sfx.miss();
+    lastJ = { j, t: performance.now() };
     return j;
   }
 
@@ -1333,7 +1382,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     shake = Math.max(0, shake - dt * 45);
     for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt * 2.6; if (rings[i].life <= 0) rings.splice(i, 1); }
     if (banner && (banner.life -= dt / 2.2) <= 0) banner = null;
-    if (grid) draw(now);
+    if (grid) { draw(now); drawLane(now); }
     requestAnimationFrame(tick);
   }
 
