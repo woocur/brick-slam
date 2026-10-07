@@ -233,6 +233,15 @@ button { touch-action: manipulation; }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
+.tutbox {
+  position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
+  width: min(92%, 420px); box-sizing: border-box; padding: 10px 14px; border-radius: 12px;
+  background: rgba(21, 19, 31, .92); border: 1px solid var(--glow); box-shadow: 0 8px 24px -10px rgba(255, 181, 71, .6);
+  font-size: 15px; line-height: 1.45; text-align: center; color: var(--ink);
+}
+.tutbox b { color: var(--glow); font-weight: 600; }
+.tutbox small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.tutbox.ok { border-color: #b9f58a; }
 .hint { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
 .hint .keys { display: none; }
 @media (hover: hover) and (pointer: fine) { .hint .keys { display: inline; } }
@@ -324,6 +333,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         <button id="size5" aria-pressed="false">5 × 5</button>
       </div>
     </div>
+    <button class="btn alt" id="tutBtn" data-i18n="tutBtn"></button>
     <button class="btn" id="okBtn">OK</button>
   </section>
 
@@ -363,6 +373,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   <div class="stage" id="stage">
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
+    <div class="tutbox" id="tutBox" role="status" hidden></div>
     <div class="overlay" id="overOv" hidden>
       <div class="card">
         <h2 id="overTitle" data-i18n="overTitle"></h2>
@@ -462,8 +473,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     });
     return out;
   }
+  // tutorial: a slow, endless groove; bricks are placed by the tutorial steps instead of a chart
+  const TUT = { id: 'tut', name: { ko: '튜토리얼', en: 'Tutorial' }, bpm: 92, stars: 0, style: 'pop', tutorial: true,
+    parts: { verse: { prog: SONGS[0].parts.verse.prog }, chorus: SONGS[0].parts.chorus },
+    map: [[16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus']], kinds: {} };
   // expand each map into per-bar lists: chart pattern, music level, drop starts, part and bar within the part
-  SONGS.forEach(s => {
+  SONGS.concat(TUT).forEach(s => {
     s.pat = []; s.lvl = []; s.drop = []; s.part = []; s.inPart = []; s.secEnd = [];
     for (const [n, p, l, part] of s.map) for (let i = 0; i < n; i++) {
       s.pat.push(p[i % p.length]); s.lvl.push(l); s.drop.push(i === 0 && l === 2);
@@ -514,6 +529,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       howEnd: '곡이 끝나기 전에 판이 <b>꽉 차면</b> 실패예요.',
       songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
+      tutBtn: '튜토리얼 다시 하기',
+      tut: [
+        '벽돌을 <b>아무 방향으로 쓸어서</b> 벽에 부딪혀 보세요.',
+        '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
+        '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
+        '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
+        '피버 동안 <b>점수가 두 배</b>예요. 박자에 맞춰 계속 밀어 보세요.',
+        '준비 끝! 진짜 곡에서는 벽돌이 박자마다 떨어져요. <b>판이 꽉 차기 전에</b> 밀어서 곡 끝까지 버티면 클리어예요.'
+      ],
+      tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
       clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
@@ -542,6 +567,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       howEnd: 'If the board <b>fills up</b> before the song ends, you fail.',
       songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
+      tutBtn: 'Replay tutorial',
+      tut: [
+        '<b>Swipe the brick</b> in any direction to slam it into a wall.',
+        'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
+        'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
+        'See the glowing bar? <b>Tap it</b> to start Fever.',
+        'Fever <b>doubles your points</b>. Keep pushing on the beat.',
+        'You\'re ready! In a real song, bricks drop on every beat. Keep the board from <b>filling up</b> until the song ends to clear it.'
+      ],
+      tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
       clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
@@ -986,10 +1021,54 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     return 'n';
   }
 
+  // ---------- tutorial: steps that wait for the player to do one thing each ----------
+  // want: how many bricks to keep on the board; need: how many times the step's action must happen
+  const TUT_STEPS = [{ want: 1, need: 1 }, { want: 1, need: 3 }, { want: 1 }, { want: 0 }, { want: 2, need: 4 }, { want: 0 }];
+  let tut = null;
+  function tutShow(note) {
+    const box = $('tutBox'), st = TUT_STEPS[tut.step];
+    const cnt = st.need > 1 ? `<small>${t('tutCount', tut.n, st.need)}${note ? ' · ' + note : ''}</small>` : note ? `<small>${note}</small>` : '';
+    box.innerHTML = t('tut')[tut.step] + cnt;
+    box.classList.toggle('ok', note === t('tutGood'));
+    box.hidden = false;
+  }
+  function tutGo(step) {
+    tut.step = step; tut.n = 0; tut.at = sp;
+    if (step === 2) bars.forEach(b => { b.charge = CFG[N].need - 1; });   // one slam away from full
+    if (step === TUT_STEPS.length - 1) {
+      try { localStorage.setItem('brickslam-tut', 'done'); } catch (e) {}
+      sfx.levelUp();
+    }
+    tutShow();
+  }
+  function tutEvent(kind, j) {
+    if (!tut || over) return;
+    const st = tut.step;
+    if (st === 0 && kind === 'slam') return tutGo(1);
+    if (st === 1 && kind === 'push') {
+      if (j < 2) { if (++tut.n >= 3) return tutGo(2); tutShow(t('tutGood')); }
+      else tutShow(t('tutMiss'));
+    }
+    if (st === 2 && kind === 'full') return tutGo(3);
+    if (st === 3 && kind === 'fever') return tutGo(4);
+    if (st === 4 && kind === 'slam' && ++tut.n >= 4) return tutGo(5);
+    if (st === 4 && kind === 'slam') tutShow();
+  }
+  // on each beat: top the board up to what the step wants; the last step closes after a few bars
+  function tutBeat(bar) {
+    if (tut.step === TUT_STEPS.length - 1) { if (sp - tut.at > 6 * song.spb) tutEnd(); return; }
+    if (blocks.length + moving.length < TUT_STEPS[tut.step].want) spawn(performance.now(), bar);
+  }
+  function tutEnd() {
+    tut = null; $('tutBox').hidden = true;
+    goHome(); showView('howView'); renderSongs();
+  }
+
   // one eighth-note slot of the chart: drop its bricks, announce drops and new kinds of brick
   function playSlot(k) {
     const bar = Math.floor(k / 8), s8 = k % 8;
     if (bar >= song.bars) return;
+    if (tut) { if (s8 % 2 === 0) tutBeat(bar); return; }
     if (s8 === 0) {
       const fresh = Object.keys(song.kinds).find(x => song.kinds[x] === bar && bar > 0);
       if (fresh) { forceType = fresh; banner = { title: t(KINDS[fresh]), sub: '', life: 1 }; }
@@ -1039,6 +1118,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (!blocks.includes(b)) return;
     const { dx, dy } = DIRS[d];
     const j = judge(ts);
+    tutEvent('push', j);
     const jx = M + ((b.slide ? b.slide.fx : b.x) + 0.5) * cell, jy = M + ((b.slide ? b.slide.fy : b.y) + 0.5) * cell;
     pops.push({ x: jx, y: jy - cell * 0.3, text: t('judgeNames')[j], life: 1, c: JUDGE_COL[j], small: true });
     // slide until the wall or the cell before another brick
@@ -1073,7 +1153,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function chargeBar(bar, n) {
     if (bar.full) return;
     bar.charge = Math.min(CFG[N].need, bar.charge + n);
-    if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; sfx.charged(); }
+    if (bar.charge >= CFG[N].need) { bar.full = true; bar.flash = 1; sfx.charged(); tutEvent('full'); }
   }
 
   function burst(x, y, d, cols, n, speed = 1) {
@@ -1095,6 +1175,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function hit(m, now) {
     const k = m.type || 'n';
+    tutEvent('slam');
     // points: timing judgement x combo (up to x2 at 50) x Fever x gold
     let pts = Math.round(10 * JUDGE_MUL[m.j] * (1 + Math.min(combo, 50) / 50) * mult * (k === 'gold' ? 3 : 1));
     chargeBar(bars[m.d], k === 'rain' ? CFG[N].need : (k === 'gold' ? 2 : 1) + (m.j === 0 ? 1 : 0));
@@ -1141,6 +1222,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (fever()) { mult += 1; feverUntil += FEVER_EXTEND_BEATS * song.spb; }
     else { mult = 2; feverUntil = sp + FEVER_BEATS * song.spb; }
     feverTotal = feverUntil - sp;
+    tutEvent('fever');
     flash = 1;
     sfx.fever(mult);
     hud();
@@ -1155,7 +1237,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const isBest = score > best;
     if (!won) sfx.music('off');   // a clear lets the closing chord ring out
     sfx.over(won || (isBest && score > 0));
-    if (isBest) { best = score; try { localStorage.setItem(bestKey(song, N), best); } catch (e) {} }
+    if (isBest && !song.tutorial) { best = score; try { localStorage.setItem(bestKey(song, N), best); } catch (e) {} }
     showBest();
     renderSongs();
     $('overTitle').textContent = t(won ? 'clearTitle' : 'overTitle');
@@ -1432,6 +1514,18 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       }
     }
     for (const m of moving) drawBrick(m.fx, m.fy, 1, m, now, false);
+    // tutorial hint: chevrons sweeping out of the first brick to show a swipe
+    if (tut && tut.step === 0 && blocks[0] && !over && !reduceMotion) {
+      const b = blocks[0], cx = M + (b.x + 0.5) * cell, cy = M + (b.y + 0.5) * cell;
+      const dir = b.x < N / 2 ? 1 : -1, ph2 = (now / 900) % 1;
+      ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let i = 0; i < 3; i++) {
+        const q = (ph2 + i / 3) % 1, x = cx + dir * (cell * 0.2 + q * cell * 1.1), h = cell * 0.14;
+        ctx.globalAlpha = Math.sin(q * Math.PI) * 0.9;
+        ctx.beginPath(); ctx.moveTo(x - dir * h, cy - h); ctx.lineTo(x, cy); ctx.lineTo(x - dir * h, cy + h); ctx.stroke();
+      }
+      ctx.restore();
+    }
     for (const p of parts) {
       ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c;
       const z = p.s * (0.5 + p.life * 0.5); ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z);
@@ -1496,7 +1590,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const a = sfx.clock();
       sp = a == null ? sp + dt : Math.abs(a - sp - dt) < 0.03 ? sp + dt + (a - sp - dt) * 0.25 : a;
       while (!over && sp >= slotNext * song.spb / 2) playSlot(slotNext++);
-      if (!over && sp >= song.len) gameOver(true);
+      if (!over && sp >= song.len) { if (tut) tutEnd(); else gameOver(true); }
       if (mult > 1 && !fever()) { mult = 1; hud(); sfx.feverEnd(); }
       hudSong();
       const step = SLIDE_SPEED * dt;
@@ -1544,8 +1638,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); }, audio() {} }, window.BrickHooks || {});
   hooks.audio(sfx);   // lets a platform mute the game (CrazyGames settings, ads)
   function play(n) { hooks.beforePlay(() => start(n)); }
-  function start(n) {
+  function start(n, tutorial) {
     if (n) N = n;
+    song = tutorial ? TUT : SONGS[pickSong];
+    tut = tutorial ? { step: 0, n: 0, at: 0 } : null;
+    $('tutBox').hidden = true;
     $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
     document.body.classList.add('playing');
     window.scrollTo(0, 0);
@@ -1553,6 +1650,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     showBest();
     hooks.gameStart();
     sfx.music('game', song);
+    if (tut) { $('lvl').textContent = song.name[lang]; tutShow(); }
   }
   function showView(id) {
     ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
@@ -1560,6 +1658,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function goHome() {
     if (!over) hooks.gameStop();
+    tut = null; $('tutBox').hidden = true;
     sfx.music('title');
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
@@ -1601,7 +1700,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   setSize(pickSize);
   $('size4').addEventListener('click', () => setSize(4));
   $('size5').addEventListener('click', () => setSize(5));
-  $('startBtn').addEventListener('click', () => { showView('howView'); $('okBtn').focus(); });
+  // first time ever: straight into the tutorial; afterwards: how-to and song pick
+  let tutDone = false;
+  try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
+  $('startBtn').addEventListener('click', () => {
+    try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
+    if (!tutDone) hooks.beforePlay(() => start(pickSize, true));
+    else { showView('howView'); $('okBtn').focus(); }
+  });
+  $('tutBtn').addEventListener('click', () => hooks.beforePlay(() => start(pickSize, true)));
   $('rankBtn').addEventListener('click', () => { showView('rank'); setTab(pickSize); });
   $('howBack').addEventListener('click', () => showView('titleView'));
   $('rankBack').addEventListener('click', () => showView('titleView'));
