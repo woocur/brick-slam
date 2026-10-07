@@ -427,7 +427,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       },
       map: [[4, 'h', 0, 'verse'], [8, 'ht', 1, 'verse'], [8, 'tt', 1, 'chorus'], [4, 'hr', 0, 'verse'], [8, 'tq', 2, 'chorus'], [4, 'h', 1, 'chorus']],
       kinds: { gold: 12 } },
-    { id: 'neon', name: { ko: '네온 러시', en: 'Neon Rush' }, bpm: 122, stars: 2, style: 'wave',
+    { id: 'neon', name: { ko: '네온 러시', en: 'Neon Rush' }, bpm: 126, stars: 2, style: 'wave',
       parts: {
         verse: { prog: [[45, [57, 60, 64]], [41, [57, 60, 65]], [48, [55, 60, 64]], [43, [55, 59, 62]]],
           mel: ['76 - 74 - 72 - 74 76 - - 79 - 76 - 74 -', '72 - 74 - 76 - 79 - 81 - 79 76 - 74 72 -'] },
@@ -763,9 +763,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       oscs.forEach(os => { os.start(t); os.stop(t + dur + rel + 0.05); });
     }
     // drums
-    function kick(t, v) {
-      tone(150, t, 0.17, { vol: v, to: 42, dest: mus }); noise(t, 0.02, { vol: v * 0.3, freq: 3000, type: 'highpass', dest: mus });
-      duck.gain.cancelScheduledValues(t); duck.gain.setValueAtTime(0.35, t); duck.gain.setTargetAtTime(1, t + 0.02, 0.07);   // pump
+    function kick(t, v, hard) {
+      tone(hard ? 180 : 150, t, hard ? 0.22 : 0.17, { vol: v, to: 40, dest: mus });
+      noise(t, 0.02, { vol: v * (hard ? 0.55 : 0.3), freq: 3000, type: 'highpass', dest: mus });
+      if (hard) tone(55, t, 0.28, { vol: v * 0.5, to: 45, attack: 0.01, dest: mus });   // sub tail
+      duck.gain.cancelScheduledValues(t); duck.gain.setValueAtTime(hard ? 0.15 : 0.35, t); duck.gain.setTargetAtTime(1, t + 0.03, hard ? 0.09 : 0.07);   // pump
     }
     function snare(t, v, verb) {
       noise(t, 0.16, { vol: v, freq: 1900, q: 0.6, dest: mus }); tone(210, t, 0.09, { vol: v * 0.45, to: 150, dest: mus });
@@ -815,32 +817,39 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // ---- drums ----
       const four = st !== 'pop' || lv === 2;
       const killLast = preDrop && s16 >= 12;                 // drop out the kick just before a drop
+      const wv = st === 'wave';
       if (!killLast) {
-        if (lv === 0) { if (s16 === 0 || s16 === 8) kick(t, 0.6); }
-        else if (four ? s16 % 4 === 0 : (s16 === 0 || s16 === 8 || s16 === 10)) kick(t, 0.95);
+        if (lv === 0) { if (wv ? s16 % 4 === 0 : s16 === 0 || s16 === 8) kick(t, wv ? 0.7 : 0.6, wv); }
+        else if (four ? s16 % 4 === 0 : (s16 === 0 || s16 === 8 || s16 === 10)) kick(t, 0.95, wv);
+        if (wv && lv === 2 && s16 === 14 && song.inPart[bar] % 2 === 1) kick(t, 0.6, true);   // extra push into every other bar
       }
       if (lv > 0) {
         if (preDrop) { if (s16 % (s16 < 8 ? 4 : s16 < 12 ? 2 : 1) === 0) snare(t, 0.15 + 0.25 * s16 / 16); }
         else if (fill && s16 >= 12) snare(t, 0.3 + 0.05 * (s16 - 12));
-        else if (s16 === 4 || s16 === 12) { snare(t, 0.42, st === 'wave' ? 0.5 : 0.2); if (lv === 2 || st === 'pop') clap(t, 0.12); }
+        else if (s16 === 4 || s16 === 12) { snare(t, 0.42, wv ? 0.25 : 0.2); if (lv === 2 || st === 'pop' || wv) clap(t, wv ? 0.2 : 0.12); }
       }
-      if (lv === 0) { if (s16 % 4 === 2) hat(t, 0.07); }
+      if (wv) {   // synthwave: open hat on every off-beat, a 16th shaker on top
+        if (s16 % 4 === 2) hat(t, lv ? 0.17 : 0.1, true);
+        else if (lv > 0) hat(t, s16 % 2 ? 0.05 : 0.08);
+      }
+      else if (lv === 0) { if (s16 % 4 === 2) hat(t, 0.07); }
       else if (st === 'euro') { if (s16 % 4 === 2) hat(t, 0.16, true); else if (hot || s16 % 2 === 0) hat(t, 0.06); }
       else if (hot || st === 'pop') hat(t, s16 % 4 === 2 ? 0.16 : s16 % 2 ? 0.05 : 0.1);
       else if (s16 % 2 === 0) hat(t, s16 % 4 === 2 ? 0.17 : 0.09);
       // ---- bass ----
-      if (lv === 0) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
+      if (lv === 0 && !wv) { if (s16 === 0) voice(root, t, 14 * sx, { wave: 'triangle', vol: 0.22, att: 0.02, rel: 0.2 }); }
+      else if (lv === 0) { if (s16 % 4 === 2) voice(root, t, 1.6 * sx, { wave: 'sawtooth', cut: 380, env: 3, q: 2, vol: 0.16, pluck: true }); }
       else if (st === 'pop') {
         const BP = { 0: 0, 3: 12, 6: 0, 8: 0, 10: 7, 14: 12 };
         if (s16 in BP) voice(root + BP[s16], t, (s16 === 0 ? 2.5 : 1.4) * sx, { wave: 'sawtooth', cut: 500, env: 4, q: 3, vol: 0.2, pluck: true });
       } else if (st === 'wave') {
-        if (s16 % 2 === 0) voice(root + (lv === 2 && s16 % 4 === 2 ? 12 : 0), t, 1.7 * sx, { wave: 'sawtooth', det: 6, cut: 420, env: 5, q: 2, vol: 0.19, pluck: true });
+        if (s16 % 4 !== 0) voice(root + (lv === 2 && s16 % 4 === 3 ? 12 : 0), t, 0.9 * sx, { wave: 'sawtooth', det: 6, cut: 480, env: 5, q: 3, vol: 0.2, pluck: true });
       } else if (s16 % 2 === 0) {
         voice(root + (s16 % 4 === 2 ? 24 : 12), t, 1.6 * sx, { wave: 'sawtooth', det: 5, cut: 700, env: 4, q: 2, vol: 0.17, pluck: true });
       }
       // ---- chords ----
       if (lv === 0 || st === 'wave') {
-        if (s16 === 0) ch.forEach(m => voice(m, t, 15 * sx, { wave: 'sawtooth', det: 12, cut: lv === 0 ? 900 : 1500, att: 0.12, rel: 0.4, vol: 0.035, rev: 0.6 }));
+        if (s16 === 0) ch.forEach(m => voice(m, t, 15 * sx, { wave: 'sawtooth', det: 12, cut: lv === 0 ? 900 : 1300, att: 0.12, rel: 0.4, vol: st === 'wave' ? 0.026 : 0.035, rev: st === 'wave' ? 0.35 : 0.6 }));
         if (st === 'wave' && lv === 2 && s16 % 2 === 0) ch.forEach(m => voice(m + 12, t, 0.9 * sx, { wave: 'sawtooth', det: 8, cut: 2600, vol: 0.022, pluck: true }));
       } else if (st === 'pop') {
         // electric-piano stabs, pushed off the beat
