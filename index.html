@@ -159,6 +159,20 @@ button { touch-action: manipulation; }
 .how li em { font-style: normal; }
 .how .end { margin: 0; font-size: 14px; color: var(--muted); }
 .how .end b { color: var(--danger); font-weight: 600; }
+.songs { display: grid; gap: 8px; width: 100%; max-width: 420px; align-self: center; }
+.songs button {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; text-align: left; cursor: pointer;
+  padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: #1c192b; color: var(--ink); font: inherit;
+}
+.songs button[aria-checked="true"] { border-color: var(--glow); background: #2a2238; box-shadow: 0 0 0 1px var(--glow), 0 8px 22px -12px rgba(255, 181, 71, .7); }
+.songs b { font-family: var(--display); font-weight: 400; font-size: 19px; }
+.songs .stars { color: var(--glow); font-size: 14px; letter-spacing: 1px; text-align: right; }
+.songs small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.songs small:last-child { text-align: right; }
+.judges { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
+.judges b { color: var(--ink); font-weight: 600; }
+.judges .p { color: #7df3ff; } .judges .g { color: #b9f58a; } .judges .m { color: var(--danger); }
+.grade { font-family: var(--display); font-size: 54px; line-height: 1; margin: 0; color: var(--glow); text-shadow: 0 0 24px rgba(255, 181, 71, .6); }
 
 /* ---------- game ---------- */
 .game {
@@ -301,6 +315,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         <div class="kinds"><span><i class="k-gold"></i><em data-i18n="kGold"></em></span><span><i class="k-stone"></i><em data-i18n="kStone"></em></span><span><i class="k-bomb"></i><em data-i18n="kBomb"></em></span><span><i class="k-rain"></i><em data-i18n="kRain"></em></span></div></div></li>
     </ol>
     <p class="end" data-i18n-html="howEnd"></p>
+    <div class="songs" id="songs" role="radiogroup" data-i18n-aria="songPick"></div>
     <div class="sizepick">
       <span data-i18n="boardSize"></span>
       <div class="tabs" role="group" data-i18n-aria="boardSize">
@@ -348,11 +363,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="overlay" id="overOv" hidden>
       <div class="card">
-        <h2 data-i18n="overTitle"></h2>
+        <h2 id="overTitle" data-i18n="overTitle"></h2>
+        <p class="grade" id="grade" hidden></p>
         <div class="result">
           <div><span data-i18n="score"></span><b id="finalScore">0</b></div>
           <div><span data-i18n="best"></span><b id="finalBest">0</b></div>
         </div>
+        <p class="judges" id="judges"></p>
         <p class="newbest" id="newBest" data-i18n="newBest" hidden></p>
         <p class="ranked" id="ranked" hidden></p>
         <button class="btn" id="retryBtn" data-i18n="retry"></button>
@@ -374,21 +391,58 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // 0 top, 1 right, 2 bottom, 3 left
   const DIRS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
   const CFG = { 4: { cap: 16, need: 6 }, 5: { cap: 25, need: 8 } };
-  const SLIDE_SPEED = 14;      // cells per second
-  const FEVER_MS = 8000, FEVER_EXTEND_MS = 5000;
-  // spawn pacing: starts at 1.4 s, speeds up per spawn down to SPAWN_MIN_MS; Fever spawns 1.3x faster
-  const SPAWN_MIN_MS = 750, SPAWN_RAMP = 0.9925, FEVER_SPAWN = 0.77;
+  const SLIDE_SPEED = 14;      // cells per second (slides that stop against another brick)
+  const FEVER_BEATS = 16, FEVER_EXTEND_BEATS = 8;
+  // timing windows around each beat, in seconds; points multiplier per judgement (PERFECT, GREAT, MISS)
+  const WIN_PERFECT = 0.055, WIN_GREAT = 0.11, JUDGE_MUL = [2, 1.5, 1];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ---------- songs: each one is a stage that ends when the music ends ----------
+  // a bar is 8 eighth-note slots; each number is how many bricks drop on that slot
+  const PAT = {
+    r: [0, 0, 0, 0, 0, 0, 0, 0],
+    h: [1, 0, 0, 0, 1, 0, 0, 0],
+    t: [1, 0, 0, 0, 1, 0, 1, 0],
+    q: [1, 0, 1, 0, 1, 0, 1, 0],
+    s: [1, 0, 1, 0, 1, 0, 1, 1],
+    d: [2, 0, 0, 0, 1, 0, 1, 0]
+  };
+  // map: [bars, bar patterns (cycled), music level 0 calm / 1 full / 2 drop]; kinds: bar a special brick first appears
+  const SONGS = [
+    { id: 'warm', name: { ko: '워밍업', en: 'Warm Up' }, bpm: 100, stars: 1, wave: 'triangle',
+      prog: [[48, [60, 64, 67]], [43, [59, 62, 67]], [45, [60, 64, 69]], [41, [60, 65, 69]]],
+      lead: [[72, 0, 0, 0, 76, 0, 74, 0, 72, 0, 0, 0, 67, 0, 0, 0], [69, 0, 71, 0, 72, 0, 74, 0, 76, 0, 0, 0, 74, 0, 72, 0]],
+      map: [[4, 'h', 0], [8, 'ht', 1], [8, 'tt', 1], [4, 'hr', 0], [8, 'tq', 2], [4, 'h', 1]],
+      kinds: { gold: 12 } },
+    { id: 'neon', name: { ko: '네온 러시', en: 'Neon Rush' }, bpm: 122, stars: 2, wave: 'triangle',
+      prog: [[45, [57, 60, 64]], [41, [53, 57, 60]], [48, [55, 60, 64]], [43, [55, 59, 62]]],
+      lead: [[76, 0, 74, 0, 72, 0, 74, 76, 0, 0, 79, 0, 76, 0, 74, 0], [72, 0, 74, 0, 76, 0, 79, 0, 81, 0, 79, 76, 0, 74, 72, 0]],
+      map: [[4, 'h', 0], [8, 'tt', 1], [8, 'tq', 1], [4, 'hh', 0], [12, 'qs', 2], [4, 'qd', 2], [4, 't', 1]],
+      kinds: { gold: 4, stone: 12 } },
+    { id: 'drive', name: { ko: '오버드라이브', en: 'Overdrive' }, bpm: 140, stars: 3, wave: 'sawtooth',
+      prog: [[50, [62, 65, 69]], [46, [58, 62, 65]], [48, [60, 64, 67]], [45, [61, 64, 69]]],
+      lead: [[74, 0, 77, 0, 81, 0, 77, 0, 74, 0, 72, 74, 0, 0, 70, 0], [72, 0, 76, 0, 79, 0, 76, 0, 81, 0, 0, 79, 76, 0, 73, 0]],
+      map: [[4, 't', 0], [8, 'qt', 1], [8, 'qs', 1], [4, 'h', 0], [12, 'sd', 2], [8, 'tq', 1], [8, 's', 2]],
+      kinds: { gold: 0, stone: 4, bomb: 12, rain: 24 } }
+  ];
+  // expand each map into per-bar pattern / music level / section-start lists
+  SONGS.forEach(s => {
+    s.pat = []; s.lvl = []; s.drop = [];
+    for (const [n, p, l] of s.map) for (let i = 0; i < n; i++) { s.pat.push(p[i % p.length]); s.lvl.push(l); s.drop.push(i === 0 && l === 2); }
+    s.bars = s.pat.length;
+    s.spb = 60 / s.bpm;
+    s.len = s.bars * 4 * s.spb;
+  });
+
   let N = 4, S = 0, M = 0, B = 0, cell = 0;
-  let grid, blocks, moving, parts, pops, bars, score, mult, feverUntil, feverTotal, nextSpawn, interval, flash;
-  let over = true, selected = null, drag = null, hover = null, last = performance.now(), hiddenAt = 0;
-  // levels: slams fill the level bar; each level can unlock a special brick
-  let level = 1, lvSlams = 0, combo = 0, lastSlam = -1e9, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false;
-  const COMBO_MS = 1500;
-  const levelNeed = l => 8 + 2 * l;
-  const KINDS = { gold: { lv: 2, key: 'newGold' }, stone: { lv: 3, key: 'newStone' }, bomb: { lv: 4, key: 'newBomb' }, rain: { lv: 5, key: 'newRain' } };
-  const DOUBLE_LV = 6;
+  let grid, blocks, moving, parts, pops, bars, score, mult, feverUntil, feverTotal, flash;
+  let over = true, selected = null, drag = null, hover = null, last = performance.now();
+  // rhythm state: sp = song position in seconds as heard (negative during the count-in)
+  let song = SONGS[0], sp = 0, slotNext = 0, cleared = false, judges = [0, 0, 0], maxCombo = 0, calib = 0;
+  let combo = 0, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false;
+  const KINDS = { gold: 'newGold', stone: 'newStone', bomb: 'newBomb', rain: 'newRain' };
+  const JUDGE_COL = ['#7df3ff', '#b9f58a', '#ff5a4e'];
+  try { calib = (+localStorage.getItem('brickslam-calib') || 0) / 1000; } catch (e) {}
   // brick colors: [top highlight, face, side]
   const KIND_COL = {
     n: ['#f3966a', '#cf6339', '#7f3a20'],
@@ -405,17 +459,19 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
       how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
-      how2t: '벽 충전', how2: '벽돌이 부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차면 바가 확 빛나요.',
-      how3t: '눌러서 피버', how3: '빛나는 바를 누르면 피버. 벽돌이 빨리 나오고 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
-      how4t: '레벨과 특수 벽돌', how4: '벽을 칠수록 레벨이 오르고, 레벨마다 새 벽돌이 나와요.',
+      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 네 귀퉁이의 원이 점에 닿는 순간 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
+      how3t: '벽 충전과 피버', how3: '부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차서 빛나는 바를 누르면 피버, 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
+      how4t: '곡과 특수 벽돌', how4: '곡이 끝날 때까지 버티면 클리어. 어려운 곡일수록 특수 벽돌이 많이 나와요.',
       kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
       lvUp: n => 'LEVEL ' + n, combo: n => '콤보 ' + n,
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
-      howEnd: '판이 벽돌로 <b>꽉 차면</b> 끝나요.',
+      howEnd: '곡이 끝나기 전에 판이 <b>꽉 차면</b> 실패예요.',
+      songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
+      clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
-      hint: '벽돌을 쓸어서 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
+      hint: '박자에 맞춰 벽돌을 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
       rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
       privacy: '개인정보처리방침',
       rankSoon: '랭킹은 곧 열려요', rankFail: '랭킹을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.',
@@ -431,17 +487,19 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
       how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
-      how2t: 'Charge the walls', how2: 'Each slam fills that wall\'s bar with light. When it is full, the bar flashes.',
-      how3t: 'Tap for Fever', how3: 'Tap a glowing bar to start Fever: bricks come faster and points double. Tap another glowing bar during Fever to raise the multiplier.',
-      how4t: 'Levels and special bricks', how4: 'Slams raise your level, and each level brings a new kind of brick.',
+      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the corner rings close on their dots for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
+      how3t: 'Charge and Fever', how3: 'Each slam fills that wall\'s bar. Tap a full, glowing bar for Fever and double points. Tap another glowing bar during Fever to raise the multiplier.',
+      how4t: 'Songs and special bricks', how4: 'Survive until the song ends to clear it. Harder songs bring more special bricks.',
       kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
       lvUp: n => 'LEVEL ' + n, combo: n => 'Combo ' + n,
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
-      howEnd: 'The game ends when the board is <b>full</b>.',
+      howEnd: 'If the board <b>fills up</b> before the song ends, you fail.',
+      songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
+      clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
-      hint: 'Swipe a brick to push · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
+      hint: 'Push bricks on the beat · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
       rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
       privacy: 'Privacy Policy',
       rankSoon: 'Ranking opens soon', rankFail: 'Couldn\'t load the ranking. Refresh in a moment.',
@@ -470,11 +528,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   $('langSw').addEventListener('click', () => applyLang(lang === 'ko' ? 'en' : 'ko'));
 
+  // personal bests are kept per song and board size
+  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n;
+  function getBest(s, n) { try { return +localStorage.getItem(bestKey(s, n)) || 0; } catch (e) { return 0; } }
   let best = 0;
-  try { best = +localStorage.getItem('brickpush-best') || 0; } catch (e) {}
   function showBest() {
+    best = getBest(song, N);
     $('best').textContent = best.toLocaleString();
-    $('bestLine').innerHTML = best ? t('bestHtml', best.toLocaleString()) : t('noBest');
+    $('bestLine').innerHTML = best ? t('bestSongHtml', song.name[lang], best.toLocaleString()) : t('noBest');
   }
   langHooks.push(showBest);
 
@@ -513,29 +574,30 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       src.connect(f); f.connect(g); g.connect(dest); src.start(t0); src.stop(t0 + dur + 0.02);
     }
-    // wall notes: top, right, bottom, left (a pentatonic spread so hits sound good together)
-    const WALL = [523.25, 659.25, 392, 440];
     const api = {
       get on() { return on; },
       set(v) { on = v; try { localStorage.setItem('brickpush-sound', v ? 'on' : 'off'); } catch (e) {} if (v) ctx(); musLevel(); api.onchange && api.onchange(); },
       external(m) { ext = !!m; musLevel(); },     // platform mute (CrazyGames settings, ads)
       unlock() { if (on && !ext) ctx(); },
       spawn(load) {                   // load 0..1: how full the board is
-        if (!live()) return; const t = ac.currentTime;
-        tone(700 + load * 500, t, 0.07, { type: 'triangle', vol: 0.08 + load * 0.06 });
+        if (!live()) return; const t = ac.currentTime, ch = chordAt(t);
+        tone(hz(ch[Math.floor(Math.random() * 3)] + 12), t, 0.07, { type: 'triangle', vol: 0.07 + load * 0.06 });
       },
       slide() { if (!live()) return; noise(ac.currentTime, 0.12, { vol: 0.12, freq: 600, to: 2400, q: 1.2 }); },
       bump() {
         if (!live()) return; const t = ac.currentTime;
         tone(140, t, 0.09, { vol: 0.28, to: 90 }); noise(t, 0.05, { vol: 0.08, freq: 400, type: 'lowpass' });
       },
-      slam(d, combo, hot) {
-        if (!live()) return; const t = ac.currentTime;
+      // at: audio time to sound (slams are scheduled ahead so they land on the 16th-note grid)
+      slam(d, hot, at, perfect) {
+        if (!live()) return; const t = Math.max(ac.currentTime, at || 0), ch = chordAt(t);
         tone(170, t, 0.18, { vol: 0.45, to: 50 });
         noise(t, 0.09, { vol: 0.35, freq: 1800, to: 300, q: 0.7 });
-        const f = WALL[d] * Math.pow(2, Math.min(combo - 1, 6) / 12) * (hot ? 2 : 1);
-        tone(f, t + 0.01, 0.22, { type: 'triangle', vol: 0.16 });
+        const m = [ch[0], ch[1], ch[2], ch[0] + 12][d] + 12 + (hot ? 12 : 0);
+        tone(hz(m), t + 0.005, 0.22, { type: 'triangle', vol: 0.16 });
+        if (perfect) tone(hz(m + 12), t + 0.01, 0.14, { type: 'sine', vol: 0.07 });
       },
+      miss() { if (!live()) return; noise(ac.currentTime, 0.06, { vol: 0.12, freq: 300, type: 'lowpass' }); },
       charged() {
         if (!live()) return; const t = ac.currentTime;
         tone(988, t, 0.25, { type: 'sine', vol: 0.18 }); tone(1319, t + 0.08, 0.35, { type: 'sine', vol: 0.18 });
@@ -573,24 +635,35 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (!live()) return; const t = ac.currentTime;
         [1567.98, 2093].forEach((f, i) => tone(f, t + i * 0.06, 0.3, { type: 'sine', vol: 0.12 }));
       },
-      // mode: 'off' | 'title' (calm groove) | 'game' (full track)
-      music(m) {
+      // mode: 'off' | 'title' (calm groove) | 'game' (the chosen song, which is also the game's clock)
+      music(m, sg) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
-        if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; }
+        if (mode === 'game') {
+          song = sg; feverOn = false;
+          if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; }   // one bar of count-in
+        } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; }
         musLevel();
       },
       get musicMode() { return mode; },
       setFever(f) { feverOn = f; },
       pause(p) { if (!ac) return; if (p) ac.suspend(); else if (playing) ac.resume(); },
-      _render(t0, bars, fev) {         // offline preview helper
+      // song position as heard (after output latency), in seconds; null while the audio clock is not running
+      clock() {
+        if (!ac || ac.state !== 'running' || mode !== 'game') return null;
+        return ac.currentTime - songT0 - (ac.outputLatency || ac.baseLatency || 0);
+      },
+      // audio time at which a song position should be played
+      when(sec) { return songT0 + sec; },
+      _render(t0, bars, fev, sg) {     // offline preview helper
         let t = t0; feverOn = fev;
+        if (sg) { mode = 'game'; song = sg; }
         for (let i = 0; i < bars * 16; i++) { beat(i, t); t += 60 / bpm() / 4; }
       }
     };
 
-    // ---- background music: 132 BPM arcade loop in A minor (Am F C G), faster and busier in Fever ----
-    let playing = false, mode = 'off', feverOn = false, step = 0, nextT = 0;
-    const bpm = () => mode === 'title' ? 116 : feverOn ? 146 : 132;
+    // ---- music: calm 116 BPM title groove, and one procedural track per song ----
+    let playing = false, mode = 'off', feverOn = false, step = 0, nextT = 0, song = null, songT0 = 0;
+    const bpm = () => mode === 'game' && song ? song.bpm : 116;
     const MUS_VOL = 0.42;
     function musLevel() {
       if (!ac) return;
@@ -599,17 +672,21 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       mus.gain.setTargetAtTime(v, ac.currentTime, v ? 0.05 : 0.12);
     }
     const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-    const ROOTS = [45, 41, 48, 43];                  // A2 F2 C3 G2
+    const ROOTS = [45, 41, 48, 43];                  // title: A2 F2 C3 G2
     const CHORD = [[57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62]];
-    // lead motif (16th steps, MIDI or 0 = rest), two bars that alternate
     const LEAD = [
       [76, 0, 74, 0, 72, 0, 74, 76, 0, 0, 79, 0, 76, 0, 74, 0],
       [72, 0, 74, 0, 76, 0, 79, 0, 81, 0, 79, 76, 0, 74, 72, 0]
     ];
+    function chordAt(t) {
+      if (mode !== 'game' || !song) return CHORD[0];
+      const bar = Math.max(0, Math.floor((t - songT0) / (4 * 60 / song.bpm)));
+      return song.prog[bar % song.prog.length][1];
+    }
     function beat(i, t) {
-      const s16 = i % 16, bar = Math.floor(i / 16) % 4, d = mus;
-      const root = ROOTS[bar];
+      const d = mus;
       if (mode === 'title') {         // calm title groove: soft kick, hats, bass, chords and a sparse lead
+        const s16 = i % 16, bar = Math.floor(i / 16) % 4, root = ROOTS[bar];
         if (s16 === 0 || s16 === 8) tone(130, t, 0.18, { vol: 0.55, to: 45, dest: d });
         if (s16 % 4 === 2) noise(t, 0.03, { vol: 0.1, freq: 8000, type: 'highpass', dest: d });
         if (s16 % 4 === 0) tone(hz(root), t, 0.3, { type: 'triangle', vol: 0.2, dest: d });
@@ -618,23 +695,45 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (ln && s16 % 4 === 0) tone(hz(ln), t, 0.35, { type: 'sine', vol: 0.1, dest: d });
         return;
       }
-      // drums
-      if (s16 % 4 === 0) tone(150, t, 0.16, { vol: 0.9, to: 42, dest: d });                                   // kick
-      if (s16 === 4 || s16 === 12) { noise(t, 0.14, { vol: 0.45, freq: 1900, q: 0.6, dest: d }); tone(220, t, 0.08, { vol: 0.2, to: 160, dest: d }); }
-      if (feverOn ? true : s16 % 2 === 0) noise(t, 0.035, { vol: s16 % 4 === 2 ? 0.22 : 0.12, freq: 8000, type: 'highpass', dest: d });
-      // driving bass: root on the beat, octave on the off-8ths
-      if (s16 % 2 === 0) tone(hz(root + (s16 % 4 === 2 ? 12 : 0)), t, 0.16, { type: 'sawtooth', vol: 0.16, dest: d });
-      // chord stabs
-      if (s16 === 0 || s16 === 6 || s16 === 10) CHORD[bar].forEach(m => tone(hz(m), t, 0.12, { type: 'square', vol: 0.035, dest: d }));
-      // lead
-      const n = LEAD[bar % 2][s16];
-      if (n) tone(hz(n), t, 0.2, { type: 'triangle', vol: 0.14, dest: d });
-      // fever arpeggio on every 16th
-      if (feverOn) { const ch = CHORD[bar]; tone(hz(ch[s16 % 3] + 12), t, 0.07, { type: 'square', vol: 0.045, dest: d }); }
+      if (i < 0) {                    // count-in: four stick clicks
+        if (i % 4 === 0) tone(i === -16 ? 1760 : 1320, t, 0.05, { type: 'square', vol: 0.09, dest: d });
+        return;
+      }
+      const bar = Math.floor(i / 16), s16 = i % 16;
+      if (bar >= song.bars) {         // ending: one big chord, then silence
+        if (i === song.bars * 16) {
+          const [root, ch] = song.prog[0];
+          tone(hz(root), t, 1.6, { type: 'sawtooth', vol: 0.16, dest: d });
+          ch.forEach(m => tone(hz(m + 12), t, 1.6, { type: 'triangle', vol: 0.08, attack: 0.01, dest: d }));
+          tone(150, t, 0.4, { vol: 0.9, to: 40, dest: d });
+          noise(t, 1.2, { vol: 0.35, freq: 6000, type: 'highpass', dest: d });
+        }
+        return;
+      }
+      const [root, ch] = song.prog[bar % song.prog.length], lv = song.lvl[bar], hot = lv === 2 || feverOn;
+      if (song.drop[bar] && s16 === 0) noise(t, 1.0, { vol: 0.3, freq: 5000, type: 'highpass', dest: d });   // crash into a drop
+      // drums: calm bars get a half-time kick and no snare
+      if (lv === 0 ? s16 % 8 === 0 : s16 % 4 === 0) tone(150, t, 0.16, { vol: lv ? 0.9 : 0.6, to: 42, dest: d });
+      if (lv > 0 && (s16 === 4 || s16 === 12)) { noise(t, 0.14, { vol: 0.45, freq: 1900, q: 0.6, dest: d }); tone(220, t, 0.08, { vol: 0.2, to: 160, dest: d }); }
+      if (lv === 2 && s16 === 15 && bar % 2) noise(t, 0.08, { vol: 0.25, freq: 1900, q: 0.6, dest: d });
+      if (lv === 0 ? s16 % 4 === 2 : hot || s16 % 2 === 0) noise(t, 0.035, { vol: s16 % 4 === 2 ? 0.2 : 0.11, freq: 8000, type: 'highpass', dest: d });
+      // bass
+      if (lv === 0) { if (s16 % 8 === 0) tone(hz(root), t, 0.5, { type: 'triangle', vol: 0.22, dest: d }); }
+      else if (s16 % 2 === 0) tone(hz(root + (s16 % 4 === 2 ? 12 : 0)), t, 0.16, { type: 'sawtooth', vol: 0.15, dest: d });
+      // chords: pads when calm, stabs otherwise
+      if (lv === 0) { if (s16 === 0) ch.forEach(m => tone(hz(m), t, 1.4, { type: 'triangle', vol: 0.05, attack: 0.05, dest: d })); }
+      else if (s16 === 0 || s16 === 6 || s16 === 10) ch.forEach(m => tone(hz(m), t, 0.12, { type: 'square', vol: 0.035, dest: d }));
+      // lead (every other bar when calm), arpeggio in drops and Fever
+      const n = song.lead[bar % 2][s16];
+      if (n && (lv > 0 || bar % 2 === 0)) tone(hz(n), t, 0.2, { type: song.wave, vol: song.wave === 'sawtooth' ? 0.06 : 0.14, dest: d });
+      if (hot) tone(hz(ch[s16 % 3] + 12), t, 0.07, { type: 'square', vol: 0.045, dest: d });
     }
     setInterval(() => {
       if (!playing || !ac || ac.state !== 'running') return;
-      if (nextT < ac.currentTime - 0.2) nextT = ac.currentTime + 0.05;   // recovered from a stall
+      if (nextT < ac.currentTime - 0.2) {          // recovered from a stall: keep the song's grid, skip what was missed
+        const st = 60 / bpm() / 4, skip = Math.ceil((ac.currentTime + 0.05 - nextT) / st);
+        nextT += skip * st; step += skip;
+      }
       while (nextT < ac.currentTime + 0.15) {
         if (on && !ext) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
         nextT += 60 / bpm() / 4;
@@ -672,73 +771,85 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     grid = new Array(N * N).fill(null);
     blocks = []; moving = []; parts = []; pops = [];
     bars = [0, 1, 2, 3].map(() => ({ charge: 0, full: false, flash: 0, spots: [] }));
-    score = 0; mult = 1; feverUntil = 0; feverTotal = 1; flash = 0;
-    interval = 1400; nextSpawn = performance.now() + 600;
+    score = 0; mult = 1; feverUntil = -1e9; feverTotal = 1; flash = 0;
+    sp = -4 * song.spb - 0.1; slotNext = 0; cleared = false; judges = [0, 0, 0]; maxCombo = 0;
     selected = null; drag = null; hover = null; over = false;
-    level = 1; lvSlams = 0; combo = 0; lastSlam = -1e9; banner = null; shake = 0; rings = []; forceType = null;
+    combo = 0; banner = null; shake = 0; rings = []; forceType = null;
     feverShown = false; shownCombo = 0; $('game').classList.remove('fever'); $('combo').classList.remove('on');
-    layout(); hud(); hudLevel();
+    $('lvl').textContent = song.name[lang];
+    layout(); hud(); hudSong();
   }
 
-  function hudLevel() {
-    $('lvl').textContent = 'Lv.' + level;
-    $('lvfill').style.width = (lvSlams / levelNeed(level) * 100) + '%';
-  }
+  function hudSong() { $('lvfill').style.width = Math.max(0, Math.min(1, sp / song.len)) * 100 + '%'; }
 
-  function pickType() {
+  function pickType(bar) {
     if (forceType) { const k = forceType; forceType = null; return k; }
+    const k = song.kinds, has = x => x in k && bar >= k[x];
     const odds = [
-      ['gold', level >= 2 ? 0.09 : 0],
-      ['stone', level >= 3 ? Math.min(0.26, 0.12 + 0.02 * (level - 3)) : 0],
-      ['bomb', level >= 4 ? 0.06 : 0],
-      ['rain', level >= 5 ? 0.04 : 0]
+      ['gold', has('gold') ? 0.08 : 0],
+      ['stone', has('stone') ? 0.14 + (song.lvl[bar] === 2 ? 0.06 : 0) : 0],
+      ['bomb', has('bomb') ? 0.06 : 0],
+      ['rain', has('rain') ? 0.035 : 0]
     ];
     let r = Math.random();
-    for (const [k, p] of odds) { if (r < p) return k; r -= p; }
+    for (const [kk, p] of odds) { if (r < p) return kk; r -= p; }
     return 'n';
   }
 
-  function addSlam() {
-    if (++lvSlams >= levelNeed(level)) {
-      lvSlams = 0; level++;
-      const k = Object.keys(KINDS).find(k => KINDS[k].lv === level);
-      if (k) forceType = k;
-      banner = { title: t('lvUp', level), sub: k ? t(KINDS[k].key) : level === DOUBLE_LV ? t('newDouble') : '', life: 1 };
-      sfx.levelUp();
+  // one eighth-note slot of the chart: drop its bricks, announce drops and new kinds of brick
+  function playSlot(k) {
+    const bar = Math.floor(k / 8), s8 = k % 8;
+    if (bar >= song.bars) return;
+    if (s8 === 0) {
+      const fresh = Object.keys(song.kinds).find(x => song.kinds[x] === bar && bar > 0);
+      if (fresh) { forceType = fresh; banner = { title: t(KINDS[fresh]), sub: '', life: 1 }; }
+      else if (song.drop[bar]) banner = { title: t('drop'), sub: '', life: 0.7 };
     }
-    hudLevel();
+    const now = performance.now();
+    for (let i = 0; i < PAT[song.pat[bar]][s8] && !over; i++) spawn(now, bar);
   }
 
-  const fever = now => now < feverUntil;
+  const fever = () => sp < feverUntil;
 
   function hud() {
-    $('score').textContent = score.toLocaleString();
+    $('score').textContent = Math.floor(score).toLocaleString();
     const m = $('mult'); m.textContent = '×' + mult; m.classList.toggle('on', mult > 1);
     const c = $('count'); c.textContent = blocks.length + '/' + CFG[N].cap;
     c.classList.toggle('warn', blocks.length >= CFG[N].cap * 0.8);
   }
 
-  function spawn(now, extra) {
+  function spawn(now, bar) {
     const empty = [];
     for (let i = 0; i < grid.length; i++) if (!grid[i]) empty.push(i);
     if (!empty.length) return gameOver();
     const i = empty[Math.floor(Math.random() * empty.length)];
-    const type = pickType();
+    const type = pickType(bar);
     const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1 };
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
     sfx.spawn(blocks.length / (N * N));
-    if (!extra) {
-      interval = Math.max(SPAWN_MIN_MS, interval * SPAWN_RAMP);
-      // from DOUBLE_LV on, bricks sometimes arrive in pairs
-      if (level >= DOUBLE_LV && Math.random() < Math.min(0.35, 0.1 * (level - DOUBLE_LV + 1))) return spawn(now, true);
-    }
     hud();
   }
 
-  function push(b, d) {
+  // judge a push against the nearest beat; ts is the input event's timestamp
+  function judge(ts) {
+    // sp was taken at the last frame (time `last`); move it to the moment of the input
+    const at = sp + ((ts || performance.now()) - last) / 1000 - calib;
+    const ph = at / song.spb, err = Math.abs(ph - Math.round(ph)) * song.spb;
+    const j = err <= WIN_PERFECT ? 0 : err <= WIN_GREAT ? 1 : 2;
+    judges[j]++;
+    combo = j < 2 ? combo + 1 : 0;
+    maxCombo = Math.max(maxCombo, combo);
+    if (j === 2) sfx.miss();
+    return j;
+  }
+
+  function push(b, d, ts) {
     if (!blocks.includes(b)) return;
     const { dx, dy } = DIRS[d];
+    const j = judge(ts);
+    const jx = M + ((b.slide ? b.slide.fx : b.x) + 0.5) * cell, jy = M + ((b.slide ? b.slide.fy : b.y) + 0.5) * cell;
+    pops.push({ x: jx, y: jy - cell * 0.3, text: t('judgeNames')[j], life: 1, c: JUDGE_COL[j], small: true });
     // slide until the wall or the cell before another brick
     let x = b.x, y = b.y;
     while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; }
@@ -747,10 +858,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (toWall) {
       grid[b.y * N + b.x] = null;
       blocks.splice(blocks.indexOf(b), 1);
-      moving.push({ fx: sx, fy: sy, d, type: b.type, hp: b.hp });
+      // the slam lands on the next 16th note, so every hit is in time with the music
+      const dist = d === 0 ? sy : d === 1 ? N - 1 - sx : d === 2 ? N - 1 - sy : sx;
+      const s16 = song.spb / 4, s1 = Math.ceil((sp + dist / 28 + 0.03) / s16) * s16;
+      moving.push({ fx: sx, fy: sy, x0: sx, y0: sy, dist, s0: sp, s1, d, j, type: b.type, hp: b.hp });
       if (b === selected) selected = null;
       if (b === hover) hover = null;
       sfx.slide();
+      sfx.slam(d, mult > 1, sfx.when(s1), j === 0);
     } else if (x === b.x && y === b.y) {
       b.bump = { d, t: 1 };   // blocked right away
       sfx.bump();
@@ -762,11 +877,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       sfx.slide();
     }
     hud();
-  }
-
-  function reached(m) {
-    return (m.d === 0 && m.fy <= 0) || (m.d === 2 && m.fy >= N - 1) ||
-           (m.d === 1 && m.fx >= N - 1) || (m.d === 3 && m.fx <= 0);
   }
 
   function chargeBar(bar, n) {
@@ -793,12 +903,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
 
   function hit(m, now) {
-    combo = now - lastSlam < COMBO_MS ? combo + 1 : 1;
-    lastSlam = now;
     const k = m.type || 'n';
-    let pts = (10 + 5 * Math.min(combo - 1, 10)) * mult * (k === 'gold' ? 3 : 1);
-    chargeBar(bars[m.d], k === 'rain' ? CFG[N].need : k === 'gold' ? 2 : 1);
-    sfx.slam(m.d, combo, mult > 1);
+    // points: timing judgement x combo (up to x2 at 50) x Fever x gold
+    let pts = Math.round(10 * JUDGE_MUL[m.j] * (1 + Math.min(combo, 50) / 50) * mult * (k === 'gold' ? 3 : 1));
+    chargeBar(bars[m.d], k === 'rain' ? CFG[N].need : (k === 'gold' ? 2 : 1) + (m.j === 0 ? 1 : 0));
     if (k === 'gold') sfx.gold();
     // impact point on the wall
     const ex = Math.round(m.fx), ey = Math.round(m.fy);
@@ -831,33 +939,41 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       }
     }
     score += pts;
-    pops.push({ x: cx, y: cy, text: '+' + pts, life: 1, hot: mult > 1 || combo > 2 || k === 'gold' });
-    addSlam();
+    pops.push({ x: cx, y: cy, text: '+' + pts, life: 1, hot: mult > 1 || m.j === 0 || k === 'gold' });
     hud();
   }
 
   function triggerFever(d) {
     const bar = bars[d];
     if (!bar.full) return;
-    const now = performance.now();
     bar.full = false; bar.charge = 0; bar.flash = 0;
-    if (fever(now)) { mult += 1; feverUntil += FEVER_EXTEND_MS; }
-    else { mult = 2; feverUntil = now + FEVER_MS; }
-    feverTotal = feverUntil - now;
+    if (fever()) { mult += 1; feverUntil += FEVER_EXTEND_BEATS * song.spb; }
+    else { mult = 2; feverUntil = sp + FEVER_BEATS * song.spb; }
+    feverTotal = feverUntil - sp;
     flash = 1;
     sfx.fever(mult);
     hud();
   }
 
-  function gameOver() {
-    over = true; drag = null; banner = null;
+  // ends the song: won = survived to the end of the music
+  function gameOver(won) {
+    over = true; drag = null; banner = null; cleared = !!won;
     if (feverShown) { feverShown = false; $('game').classList.remove('fever'); }
     hooks.gameStop();
+    score = Math.floor(score);
     const isBest = score > best;
-    sfx.music('off');
-    sfx.over(isBest && score > 0);
-    if (isBest) { best = score; try { localStorage.setItem('brickpush-best', best); } catch (e) {} }
+    if (!won) sfx.music('off');   // a clear lets the closing chord ring out
+    sfx.over(won || (isBest && score > 0));
+    if (isBest) { best = score; try { localStorage.setItem(bestKey(song, N), best); } catch (e) {} }
     showBest();
+    renderSongs();
+    $('overTitle').textContent = t(won ? 'clearTitle' : 'overTitle');
+    const tot = judges[0] + judges[1] + judges[2], acc = tot ? (judges[0] + 0.6 * judges[1]) / tot : 0;
+    $('grade').textContent = acc >= 0.9 ? 'S' : acc >= 0.75 ? 'A' : acc >= 0.55 ? 'B' : 'C';
+    $('grade').hidden = !won;
+    const jn = t('judgeNames');
+    $('judges').innerHTML = ['p', 'g', 'm'].map((c, i) => `<span class="${c}">${jn[i]} <b>${judges[i]}</b></span>`).join('') +
+      `<span>${t('maxCombo')} <b>${maxCombo}</b></span>`;
     $('finalScore').textContent = score.toLocaleString();
     $('finalBest').textContent = best.toLocaleString();
     $('newBest').hidden = !isBest || score === 0;
@@ -912,7 +1028,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const p = pt(e), dx = p.x - drag.x0, dy = p.y - drag.y0;
     if (Math.hypot(dx, dy) < Math.max(10, Math.min(28, cell * 0.25))) return;
     const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
-    push(drag.b, d);
+    push(drag.b, d, e.timeStamp);
     drag = null;
   });
   const endDrag = () => { drag = null; };
@@ -925,7 +1041,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (e.key in map) {
       e.preventDefault();
       // on a computer: point at a brick with the mouse, then push it with the arrows
-      if (hover && blocks.includes(hover)) { push(hover, map[e.key]); hover = mouseAt && brickAt(mouseAt); }
+      if (hover && blocks.includes(hover)) { push(hover, map[e.key], e.timeStamp); hover = mouseAt && brickAt(mouseAt); }
     } else if (e.key === 'f' || e.key === 'F' || e.key === ' ') {
       e.preventDefault();
       const d = bars.findIndex(b => b.full);
@@ -1062,7 +1178,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function draw(now) {
     ctx.clearRect(0, 0, S, S);
-    const isFever = !over && fever(now);
+    const isFever = !over && fever();
     const cap = CFG[N].cap;
     ctx.save();
     if (shake > 0.3 && !reduceMotion) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
@@ -1085,11 +1201,29 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.stroke(); ctx.restore();
     }
     for (let d = 0; d < 4; d++) drawBar(d, now, isFever);
+    // beat: ph runs 0..1 between beats; the four empty corners show rings closing on a dot at each beat
+    const beatPos = sp / song.spb, ph = beatPos - Math.floor(beatPos), pulse = over ? 0 : Math.exp(-ph * 7);
+    if (!over) {
+      const downbeat = ((Math.floor(beatPos) % 4) + 4) % 4 === 0;
+      ctx.save();
+      ctx.strokeStyle = isFever ? C.fever : C.glow; ctx.globalAlpha = 0.25 + 0.6 * pulse * (downbeat ? 1 : 0.7); ctx.lineWidth = 2 + 2 * pulse;
+      rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.stroke();
+      ctx.globalAlpha = 1;
+      for (const [cx, cy] of [[M / 2, M / 2], [S - M / 2, M / 2], [M / 2, S - M / 2], [S - M / 2, S - M / 2]]) {
+        const dotR = M * 0.13, ringR = dotR + (1 - ph) * M * 0.32;
+        ctx.fillStyle = pulse > 0.5 ? C.ink : (isFever ? C.fever : C.glow);
+        ctx.shadowColor = C.glow; ctx.shadowBlur = 14 * pulse;
+        ctx.beginPath(); ctx.arc(cx, cy, dotR * (1 + 0.5 * pulse), 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0; ctx.globalAlpha = 0.25 + 0.6 * ph; ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
     const aimed = drag ? drag.b : hover;
     for (const b of blocks) {
       const k = Math.min(1, (now - b.born) / 260);
       // spawn pop: overshoot then settle
-      const sc = reduceMotion ? 1 : 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);
+      const sc = reduceMotion ? 1 : 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2) + 0.05 * pulse;
       let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
       if (b.bump && !reduceMotion) { const q = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * q; by += DIRS[b.bump.d].dy * q; }
       drawBrick(bx, by, Math.max(0, sc), b, now, b === aimed);
@@ -1108,11 +1242,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const disp = css.getPropertyValue('--display');
     for (const p of pops) {
       ctx.globalAlpha = Math.max(0, p.life);
-      ctx.font = `${Math.min(28, Math.max(12, cell * 0.3))}px ${disp}`;
+      ctx.font = `${Math.min(28, Math.max(12, cell * (p.small ? 0.22 : 0.3)))}px ${disp}`;
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(15,12,25,.7)';
       const yy = p.y - (1 - p.life) * Math.min(60, cell * 0.6);
       ctx.strokeText(p.text, p.x, yy);
-      ctx.fillStyle = p.hot ? C.fever : C.ink;
+      ctx.fillStyle = p.c || (p.hot ? C.fever : C.ink);
       ctx.fillText(p.text, p.x, yy);
     }
     ctx.globalAlpha = 1;
@@ -1120,7 +1254,17 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ctx.save(); ctx.globalAlpha = flash * 0.35; ctx.fillStyle = C.fever; rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.fill(); ctx.restore();
     }
     ctx.restore();
-    // level-up banner across the board
+    // count-in: 3, 2, 1, GO over the first bar
+    if (!over && sp < 0.5 * song.spb && sp > -4 * song.spb) {
+      const n = Math.floor(-sp / song.spb), word = sp >= 0 ? t('go') : n >= 3 ? '' : String(n + 1);
+      if (word) {
+        ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.35 + 0.65 * pulse; ctx.fillStyle = C.glow; ctx.shadowColor = C.glow; ctx.shadowBlur = 24;
+        ctx.font = `${Math.round(cell * (1 + 0.2 * pulse))}px ${disp}`;
+        ctx.fillText(word, S / 2, S / 2); ctx.restore();
+      }
+    }
+    // banner across the board (new brick kinds, drops)
     if (banner) {
       const age = 1 - banner.life;
       const a = Math.min(1, age / 0.08, banner.life / 0.2);
@@ -1145,17 +1289,19 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!over) {
-      if (now >= nextSpawn) {
-        spawn(now);
-        nextSpawn = now + interval * (fever(now) ? FEVER_SPAWN : 1);
-      }
-      if (mult > 1 && !fever(now)) { mult = 1; hud(); sfx.feverEnd(); }
+      // the music is the clock; fall back to frame time if audio is not running
+      const a = sfx.clock();
+      sp = a == null ? sp + dt : Math.abs(a - sp - dt) < 0.03 ? sp + dt + (a - sp - dt) * 0.25 : a;
+      while (!over && sp >= slotNext * song.spb / 2) playSlot(slotNext++);
+      if (!over && sp >= song.len) gameOver(true);
+      if (mult > 1 && !fever()) { mult = 1; hud(); sfx.feverEnd(); }
+      hudSong();
       const step = SLIDE_SPEED * dt;
-      for (let i = moving.length - 1; i >= 0; i--) {
+      for (let i = moving.length - 1; i >= 0 && !over; i--) {
         const m = moving[i], { dx, dy } = DIRS[m.d];
-        m.fx = Math.min(N - 1, Math.max(0, m.fx + dx * step));
-        m.fy = Math.min(N - 1, Math.max(0, m.fy + dy * step));
-        if (reached(m)) { moving.splice(i, 1); hit(m, now); }
+        const k = Math.min(1, Math.max(0, (sp - m.s0) / (m.s1 - m.s0)));
+        m.fx = m.x0 + dx * m.dist * k; m.fy = m.y0 + dy * m.dist * k;
+        if (sp >= m.s1) { moving.splice(i, 1); hit(m, now); }
       }
       for (const b of blocks) {
         if (b.slide) {
@@ -1165,14 +1311,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         }
         if (b.bump && (b.bump.t -= dt * 5) <= 0) b.bump = null;
       }
-      sfx.setFever(fever(now));
-      if (fever(now) !== feverShown) { feverShown = fever(now); $('game').classList.toggle('fever', feverShown); }
-      const cShow = now - lastSlam < COMBO_MS && combo >= 2 ? combo : 0;
+      sfx.setFever(fever());
+      if (fever() !== feverShown) { feverShown = fever(); $('game').classList.toggle('fever', feverShown); }
+      const cShow = combo >= 2 ? combo : 0;
       if (cShow !== shownCombo) {
         shownCombo = cShow;
         const el = $('combo'); el.classList.toggle('on', cShow > 0); if (cShow) el.textContent = t('combo', cShow);
       }
-      $('feverfill').style.width = fever(now) ? ((feverUntil - now) / feverTotal * 100) + '%' : '0';
+      $('feverfill').style.width = fever() ? ((feverUntil - sp) / feverTotal * 100) + '%' : '0';
     }
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.94; p.vy *= 0.94; p.life -= dt * 1.8;
@@ -1201,8 +1347,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     document.body.classList.add('playing');
     window.scrollTo(0, 0);
     reset();
+    showBest();
     hooks.gameStart();
-    sfx.music('game');
+    sfx.music('game', song);
   }
   function showView(id) {
     ['titleView', 'howView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
@@ -1221,10 +1368,33 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   let pickSize = 4;
   try { pickSize = +localStorage.getItem('brickpush-size') === 5 ? 5 : 4; } catch (e) {}
   function setSize(n) {
-    pickSize = n;
+    pickSize = n; N = n; showBest(); renderSongs();
     try { localStorage.setItem('brickpush-size', n); } catch (e) {}
     $('size4').setAttribute('aria-pressed', n === 4); $('size5').setAttribute('aria-pressed', n === 5);
   }
+  // song list on the how-to screen
+  let pickSong = 0;
+  try { pickSong = Math.max(0, SONGS.findIndex(x => x.id === localStorage.getItem('brickslam-song'))); } catch (e) {}
+  song = SONGS[pickSong];
+  function renderSongs() {
+    const box = $('songs'); box.textContent = '';
+    SONGS.forEach((sg, i) => {
+      const b = document.createElement('button');
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === pickSong);
+      const nm = document.createElement('b'); nm.textContent = sg.name[lang];
+      const st = document.createElement('span'); st.className = 'stars'; st.textContent = '★'.repeat(sg.stars) + '☆'.repeat(3 - sg.stars);
+      const bp = document.createElement('small'); bp.textContent = sg.bpm + ' BPM · ' + Math.round(sg.len) + 's';
+      const bs = document.createElement('small'); const v = getBest(sg, pickSize); bs.textContent = t('songBest', v ? v.toLocaleString() : 0);
+      b.append(nm, st, bp, bs);
+      b.addEventListener('click', () => {
+        pickSong = i; song = sg;
+        try { localStorage.setItem('brickslam-song', sg.id); } catch (e) {}
+        renderSongs(); showBest();
+      });
+      box.append(b);
+    });
+  }
+  langHooks.push(renderSongs);
   setSize(pickSize);
   $('size4').addEventListener('click', () => setSize(4));
   $('size5').addEventListener('click', () => setSize(5));
@@ -1248,6 +1418,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   let fs = null, api = null, myId = null, myData = null, rankTab = 4, rankFailed = false;
   const boards = { 4: null, 5: null };
   const MAX_NICK = 12;
+  const RHYTHM_PROTO = true;
   let nickLocal = '';
   try { nickLocal = localStorage.getItem('brickpush-nick') || ''; } catch (e) {}
   $('nick').value = nickLocal;
@@ -1301,6 +1472,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   async function submitScore(n, pts) {
     const el = $('ranked'); el.hidden = true;
+    // rhythm prototype: scores use a different scale, so they stay off the live ranking until it gets per-song boards
+    if (RHYTHM_PROTO) return;
     if (!fs || !myId || pts <= 0) return;
     const prev = Number((myData && myData['best' + n]) || 0);
     if (pts <= prev) return;
@@ -1345,7 +1518,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const now = performance.now();
     sfx.pause(document.hidden);
     if (document.hidden) hiddenAt = now;
-    else if (hiddenAt && !over) { const gap = now - hiddenAt; nextSpawn += gap; if (feverUntil > hiddenAt) feverUntil += gap; hiddenAt = 0; }
+    else hiddenAt = 0;   // the song clock (audio) pauses with the tab, so nothing to shift
   });
   window.addEventListener('resize', () => { if (grid) layout(); });
 
