@@ -488,6 +488,21 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // parts: chord progression [bass root, chord] per bar and a melody (one string per bar of 16 steps:
   // a MIDI note starts a note, '-' holds it, '.' is a rest); kinds: bar a special brick first appears
   const SONGS = [
+    // recorded songs (made with Suno): src = the audio file, beats = its measured beat times (see tools/beatgrid.py)
+    { id: 'funky', name: { ko: '펑키 하우스 그루브', en: 'Funky House Groove' }, bpm: 110, stars: 1, style: 'house',
+      src: 'songs/funky-house.mp3', beats: [0.206,0.751,1.297,1.843,2.388,2.934,3.48,4.026,4.573,5.12,5.667,6.214,6.761,7.308,7.855,8.401,8.947,9.494,10.041,10.588,11.136,11.683,12.23,12.777,13.324,13.871,14.418,14.965,15.512,16.059,16.606,17.153,17.7,18.247,18.794,19.341,19.89,20.439,20.987,21.536,22.085,22.632,23.179,23.726,24.273,24.82,25.367,25.914,26.462,27.009,27.556,28.103,28.65,29.197,29.744,30.292,30.84,31.389,31.938,32.486,33.034,33.581,34.128,34.675,35.222,35.769,36.316,36.863,37.41,37.958,38.505,39.052,39.598,40.143,40.689,41.236,41.783,42.33,42.876,43.424,43.971,44.518,45.065,45.611,46.157,46.704,47.251,47.798,48.345,48.892,49.44,49.987,50.534,51.08,51.626,52.171,52.718,53.265,53.812,54.359,54.906,55.453,56.0,56.548,57.093,57.639,58.185,58.73,59.276,59.822,60.368,60.913,61.46,62.007,62.554,63.101,63.649,64.195,64.742,65.289,65.835,66.381,66.927,67.472,68.018,68.564,69.11,69.655,70.201,70.747,71.292,71.838,72.384,72.929,73.475,74.021,74.567,75.112,75.658,76.203,76.749,77.294,77.84,78.385,78.93,79.476,80.021,80.567,81.113,81.658,82.202,82.747,83.292,83.836,84.381,84.925,85.47,86.015,86.561,87.106,87.652,88.197,88.742,89.288,89.833,90.377,90.921,91.465,92.01,92.554,93.098,93.643,94.187,94.733,95.278,95.824,96.369,96.914,97.46,98.005,98.55,99.095,99.639,100.183,100.728,101.272,101.817,102.361,102.906,103.452,103.997,104.543,105.087,105.631,106.175,106.72,107.264,107.808,108.352,108.896,109.44,109.984,110.528,111.073,111.617,112.161,112.705,113.25,113.794,114.339,114.883,115.427,115.971,116.515,117.06,117.604,118.148,118.692,119.235,119.778,120.321,120.863,121.405,121.946,122.489,123.032,123.576,124.119,124.662,125.205,125.749,126.293,126.837,127.38,127.923,128.467,129.011,129.555,130.097,130.64,131.183,131.727,132.271,132.814,133.357,133.9,134.444,134.987,135.53,136.072,136.615,137.159,137.703,138.245,138.786,139.329,139.87],
+      parts: {
+        intro: { prog: [[43, [55, 59, 62]]] }, v: { prog: [[43, [55, 59, 62]]] }, c: { prog: [[43, [55, 59, 62]]] }, brk: { prog: [[43, [55, 59, 62]]] }
+      },
+      map: [[8, 'h', 0, 'intro'], [8, 'ht', 1, 'v'], [16, 'tt', 1, 'v'], [8, 'tq', 2, 'c'], [8, 'hr', 0, 'brk'], [14, 'qs', 2, 'c']],
+      kinds: { gold: 8, stone: 24 } },
+    { id: 'dungeon', name: { ko: '던전 리듬', en: 'Dungeon Rhythm' }, bpm: 103, stars: 1, style: 'house',
+      src: 'songs/dungeon-rhythm.mp3', beats: [2.844,3.427,4.009,4.591,5.17,5.748,6.326,6.904,7.482,8.059,8.636,9.214,9.795,10.376,10.958,11.539,12.12,12.702,13.284,13.866,14.448,15.03,15.612,16.195,16.776,17.358,17.94,18.522,19.103,19.685,20.267,20.849,21.431,22.013,22.595,23.177,23.759,24.341,24.923,25.505,26.087,26.669,27.251,27.833,28.415,28.997,29.579,30.161,30.743,31.325,31.907,32.489,33.071,33.653,34.235,34.817,35.399,35.981,36.562,37.144,37.726,38.308,38.889,39.471,40.052,40.634,41.216,41.798,42.38,42.962,43.544,44.126,44.708,45.29,45.871,46.453,47.034,47.616,48.197,48.778,49.36,49.942,50.523,51.105,51.687,52.27,52.852,53.433,54.015,54.597,55.178,55.759,56.341,56.922,57.504,58.085,58.667,59.249,59.831,60.412,60.993,61.574,62.155,62.735,63.314,63.894,64.474,65.054,65.634,66.214,66.795,67.377,67.958,68.539,69.12,69.701,70.283,70.864,71.444,72.024,72.605,73.185,73.765,74.346,74.926,75.507,76.089,76.671,77.253,77.835,78.416,78.997,79.577,80.158,80.739,81.317,81.895,82.473,83.052,83.632,84.211,84.791,85.371,85.953,86.536,87.116,87.696,88.276,88.856,89.436,90.016,90.596,91.176,91.758,92.339,92.921,93.502,94.082,94.661,95.241,95.82,96.4,96.98,97.56,98.141,98.719,99.297,99.875,100.453,101.03,101.608,102.185,102.762,103.343,103.924,104.505,105.086,105.668,106.251,106.833,107.415,107.997,108.579,109.161,109.743,110.322,110.901,111.48,112.06,112.639,113.219,113.798,114.377,114.955,115.533,116.111,116.689,117.267,117.846,118.424,119.003,119.585,120.164,120.742,121.321,121.9,122.479,123.057,123.636,124.212,124.791,125.37,125.947,126.523,127.1,127.676,128.253,128.83,129.407,129.985,130.564,131.143,131.723,132.302,132.882,133.464,134.047,134.629,135.212],
+      parts: {
+        intro: { prog: [[38, [57, 62, 65]]] }, a: { prog: [[38, [57, 62, 65]]] }, b: { prog: [[38, [57, 62, 65]]] }, c: { prog: [[38, [57, 62, 65]]] }
+      },
+      map: [[4, 'h', 0, 'intro'], [12, 'ht', 1, 'a'], [16, 'tt', 1, 'a'], [11, 'tq', 1, 'b'], [12, 'qs', 2, 'c']],
+      kinds: { gold: 4, stone: 20 } },
     { id: 'warm', name: { ko: '워밍업', en: 'Warm Up' }, bpm: 100, stars: 1, style: 'house',
       parts: {
         verse: { prog: [[41, [53, 57, 60, 64]], [40, [52, 55, 59, 62]], [38, [50, 53, 57, 60]], [43, [50, 55, 59, 65]]],
@@ -556,7 +571,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   // tutorial: a slow, endless groove; bricks are placed by the tutorial steps instead of a chart
   const TUT = { id: 'tut', name: { ko: '튜토리얼', en: 'Tutorial' }, bpm: 92, stars: 0, style: 'house', tutorial: true,
-    parts: { verse: { prog: SONGS[0].parts.verse.prog }, chorus: SONGS[0].parts.chorus },
+    parts: { verse: { prog: SONGS[2].parts.verse.prog }, chorus: SONGS[2].parts.chorus },
     map: [[16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus'], [16, 'r', 1, 'verse'], [16, 'r', 1, 'chorus']], kinds: {} };
   // expand each map into per-bar lists: chart pattern, music level, drop starts, part and bar within the part
   SONGS.concat(TUT).forEach(s => {
@@ -711,8 +726,32 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     let ac = null, out = null, mus = null, noiseBuf = null, on = true, ext = false;
     let rev = null, dly = null, duck = null;   // music effects: reverb send, echo send, bus that ducks under the kick
     // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
-    const buffers = {}; let track = null;
-    const stopTrack = () => { if (track) { try { track.stop(); } catch (e) {} track = null; } };
+    // beats (optional): file time of every beat, for songs whose tempo wanders (AI-made or played live);
+    // song positions stay on a steady grid and are warped onto the file through this map
+    const buffers = {}; let track = null, trackG = null, trackT0 = 0;
+    const stopTrack = () => {
+      if (!track) return;
+      const t = ac.currentTime;
+      trackG.gain.setValueAtTime(trackG.gain.value, t); trackG.gain.linearRampToValueAtTime(0, t + 0.6);
+      try { track.stop(t + 0.7); } catch (e) {}
+      track = null;
+    };
+    function f2v(ft) {               // file time -> song position
+      const B = song.beats, spb = 60 / song.bpm, L = B.length - 1;
+      if (ft <= B[0]) return ft - B[0];
+      if (ft >= B[L]) return L * spb + (ft - B[L]);
+      let lo = 0, hi = L;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (B[m] <= ft) lo = m; else hi = m; }
+      return (lo + (ft - B[lo]) / (B[lo + 1] - B[lo])) * spb;
+    }
+    function v2f(v) {                // song position -> file time
+      const B = song.beats, spb = 60 / song.bpm, L = B.length - 1;
+      if (v <= 0) return B[0] + v;
+      const k = Math.floor(v / spb);
+      if (k >= L) return B[L] + (v - L * spb);
+      return B[k] + (v / spb - k) * (B[k + 1] - B[k]);
+    }
+    const warped = () => track && song && song.beats;
     try { on = localStorage.getItem('brickpush-sound') !== 'off'; } catch (e) {}
     function ctx() {
       if (!ac) {
@@ -831,9 +870,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
           song = sg; feverOn = false;
           if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; dly.delayTime.value = 0.75 * 60 / song.bpm; }   // one bar of count-in
           if (ac && song.src && buffers[song.id]) {
-            track = ac.createBufferSource(); track.buffer = buffers[song.id]; track.connect(mus);
-            const at = songT0 - (song.offset || 0);
-            if (at >= ac.currentTime) track.start(at); else track.start(ac.currentTime, ac.currentTime - at);
+            const lead = song.beats ? song.beats[0] : (song.offset || 0);   // file seconds before the chart's first beat
+            trackT0 = Math.max(songT0 - lead, ac.currentTime + 0.05);
+            songT0 = trackT0 + lead; nextT = songT0 - 16 * 15 / song.bpm;
+            track = ac.createBufferSource(); track.buffer = buffers[song.id];
+            trackG = ac.createGain(); track.connect(trackG); trackG.connect(mus);
+            track.start(trackT0);
           }
         } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; dly.delayTime.value = 0.75 * 60 / 116; }
         musLevel();
@@ -844,10 +886,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // song position as heard (after output latency), in seconds; null while the audio clock is not running
       clock() {
         if (!ac || ac.state !== 'running' || mode !== 'game') return null;
-        return ac.currentTime - songT0 - (ac.outputLatency || ac.baseLatency || 0);
+        const t = ac.currentTime - (ac.outputLatency || ac.baseLatency || 0);
+        return warped() ? f2v(t - trackT0) : t - songT0;
       },
       // audio time at which a song position should be played
-      when(sec) { return songT0 + sec; },
+      when(sec) { return warped() ? trackT0 + v2f(sec) : songT0 + sec; },
       _render(t0, bars, fev, sg) {     // offline preview helper (sg: a song or its index)
         if (typeof sg === 'number') sg = SONGS[sg];
         ctx(); let t = t0; feverOn = fev;
