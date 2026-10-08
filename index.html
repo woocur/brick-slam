@@ -185,48 +185,53 @@ body.playing .floor { height: 34vh; opacity: .7; }
 #diffTabs button[data-d="0"][aria-pressed="true"] { color: #b9f58a; }
 #diffTabs button[data-d="2"][aria-pressed="true"] { color: var(--hot); }
 #tutBtn small { color: var(--fever); }
-/* song shelf: records stand in a crate; the picked one is pulled out and its vinyl slides out of the sleeve */
+/* song shelf: a carousel of record sleeves; the one in the middle is picked and its vinyl rises out of the sleeve */
 .shelf h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0; }
 .shelfhead { display: flex; justify-content: space-between; }
-.crate { --S: min(150px, 30vw); position: relative; width: 100%; max-width: 560px; align-self: center; }
-.rack { position: relative; display: flex; justify-content: safe center; gap: 22px; height: calc(var(--S) * 1.53); padding: calc(var(--S) * .08) calc(var(--S) * .4) 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.crate { --S: min(210px, 54vw); --G: 14px; position: relative; width: calc(100% + 32px); margin: 0 -16px; max-width: 640px; align-self: center; }
+.rack {
+  position: relative; display: flex; gap: var(--G); padding: calc(var(--S) * .36) calc(50% - var(--S) / 2) calc(var(--S) * .1);
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain;
+}
 .rack::-webkit-scrollbar { display: none; }
 .rec {
-  --c1: #ff3fa4; --c2: #2ef2ff; position: relative; flex: 0 0 var(--S); height: var(--S); padding: 0; border: 0; background: none;
-  cursor: pointer; transform: translateY(50%); transition: transform .45s cubic-bezier(.2, .9, .3, 1.15); z-index: 1; -webkit-tap-highlight-color: transparent;
+  --c1: #ff3fa4; --c2: #2ef2ff; position: relative; flex: 0 0 var(--S); height: var(--S); padding: 0; border: 0; background: none; scroll-snap-align: center; scroll-snap-stop: always;
+  cursor: pointer; transform: scale(.78); opacity: .5; transition: transform .35s cubic-bezier(.2, .9, .3, 1.1), opacity .35s; -webkit-tap-highlight-color: transparent;
 }
 .rec .sleeve {
-  position: absolute; inset: 0; z-index: 2; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
-  padding: 10px; text-align: left; color: #fff; background: linear-gradient(155deg, var(--c1), #160b2a 70%);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 -2px 18px -4px var(--c1);
+  position: absolute; inset: 0; z-index: 2; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 12px; text-align: left; color: #fff; background: linear-gradient(155deg, var(--c1), #160b2a 70%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 10px 30px -10px rgba(0, 0, 0, .8);
 }
 .rec .sleeve::before {      /* sun with stripes, like the title */
   content: ""; position: absolute; width: 78%; aspect-ratio: 1; right: -16%; bottom: -12%; border-radius: 50%;
-  background: repeating-linear-gradient(180deg, transparent 0 9px, rgba(10, 6, 24, .85) 9px 13px), linear-gradient(180deg, var(--c2), var(--c1));
+  background: repeating-linear-gradient(180deg, transparent 0 10px, rgba(10, 6, 24, .85) 10px 15px), linear-gradient(180deg, var(--c2), var(--c1));
   opacity: .85;
 }
-.rec .sleeve b { position: relative; font-family: var(--display); font-weight: 400; font-size: calc(var(--S) * .13); line-height: 1.05; text-shadow: 0 0 10px rgba(0, 0, 0, .6); }
-.rec .sleeve small { position: relative; font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
-.rec .disc { position: absolute; inset: 3%; z-index: 1; transition: transform .55s cubic-bezier(.2, .9, .3, 1); }
+.rec .sleeve b { position: relative; font-family: var(--display); font-weight: 400; font-size: calc(var(--S) * .14); line-height: 1.05; text-shadow: 0 0 10px rgba(0, 0, 0, .6); }
+.rec .sleeve small { position: relative; font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
+.rec .disc { position: absolute; inset: 4%; z-index: 1; transition: transform .55s cubic-bezier(.2, .9, .3, 1); }
 .rec .vinyl {
   position: absolute; inset: 0; border-radius: 50%;
   background: radial-gradient(circle, var(--c2) 0 15%, #0b0b10 15.5% 17%, transparent 17.5%),
     repeating-radial-gradient(circle, #121218 0 2px, #1d1d26 2px 3px);
-  box-shadow: 0 0 0 1px #2a2a35, 0 0 16px -2px var(--c1);
+  box-shadow: 0 0 0 1px #2a2a35, 0 0 22px -2px var(--c1);
 }
 .rec .vinyl::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 30deg, transparent 0 20%, rgba(255, 255, 255, .12) 25%, transparent 30% 70%, rgba(255, 255, 255, .08) 75%, transparent 80%); }
-.rec[aria-checked="true"] { transform: translateY(-3%); z-index: 3; }
-.rec[aria-checked="true"] .disc { transform: translateX(34%); }
+.rec[aria-checked="true"] { transform: none; opacity: 1; z-index: 3; }
+.rec[aria-checked="true"] .disc { transform: translateY(-34%); }
 .rec[aria-checked="true"] .vinyl { animation: spin 1.8s linear infinite; }
-.rec[aria-checked="true"] .sleeve { box-shadow: 0 0 0 2px var(--glow) inset, 0 0 26px -2px var(--c1); }
-@media (hover: hover) { .rec:not([aria-checked="true"]):hover { transform: translateY(36%); } }
+.rec[aria-checked="true"] .sleeve { box-shadow: 0 0 0 2px var(--glow) inset, 0 0 34px -2px var(--c1); }
+@media (hover: hover) { .rec:not([aria-checked="true"]):hover { opacity: .8; } }
 .rec:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.lip {
-  position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--S) * .45); z-index: 5; pointer-events: none; border-radius: 4px 4px 10px 10px;
-  background: linear-gradient(180deg, #24123f, #0d0819 60%); border-top: 2px solid var(--hot);
-  box-shadow: 0 -6px 22px -6px rgba(255, 63, 164, .8), inset 0 6px 14px -8px rgba(255, 63, 164, .9);
-}
+.flip { position: absolute; top: calc(var(--S) * .36 + var(--S) / 2 - 22px); z-index: 4; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(8, 6, 18, .75); color: var(--ink); font-size: 20px; cursor: pointer; }
+.flip:disabled { opacity: 0; pointer-events: none; }
+.flip.l { left: max(4px, calc(50% - var(--S) / 2 - 58px)); } .flip.r { right: max(4px, calc(50% - var(--S) / 2 - 58px)); }
+@media (hover: none) { .flip { display: none; } }
+.dots { display: flex; justify-content: center; gap: 8px; margin-top: -4px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
+.dots i.on { background: var(--glow); transform: scale(1.3); box-shadow: 0 0 8px var(--glow); }
 .rackhint { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
 .detail { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; align-self: center; animation: rise .3s ease-out; }
 .dhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -234,7 +239,7 @@ body.playing .floor { height: 34vh; opacity: .7; }
 .dhead .lv { font-family: var(--display); color: var(--glow); font-size: 16px; text-shadow: 0 0 8px rgba(46, 242, 255, .6); }
 .detail > small { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-top: -6px; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
-@media (prefers-reduced-motion: reduce) { .rec, .rec .disc { transition: none; } .rec[aria-checked="true"] .vinyl, .detail { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rec, .rec .disc { transition: none; } .rack { scroll-behavior: auto; } .rec[aria-checked="true"] .vinyl, .detail { animation: none; } }
 .judges { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
 .judges b { color: var(--ink); font-weight: 600; }
 .judges .p { color: #7df3ff; } .judges .g { color: #b9f58a; } .judges .m { color: var(--danger); }
@@ -408,8 +413,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <h2 data-i18n="songPick"></h2>
     <div class="crate">
       <div class="rack" id="rack" role="radiogroup" data-i18n-aria="songPick"></div>
-      <div class="lip" aria-hidden="true"></div>
+      <button class="flip l" id="flipL" aria-label="&lt;">&#8249;</button><button class="flip r" id="flipR" aria-label="&gt;">&#8250;</button>
     </div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
     <p class="rackhint" id="rackHint" data-i18n="rackHint"></p>
     <div class="detail" id="detail" hidden>
       <div class="dhead"><b id="dName"></b><span class="lv" id="dLv"></span></div>
@@ -677,7 +683,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움'],
       songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutBtn: '튜토리얼', tutNew: '처음이라면 여기부터', howBtn: '플레이 방법', playBtn: '플레이',
-      rackHint: '레코드를 눌러 꺼내 보세요', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
+      rackHint: '옆으로 넘겨 곡을 골라 보세요', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
         '벽돌을 <b>아무 방향으로 쓸어서</b> 벽에 부딪혀 보세요.',
         '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
@@ -717,7 +723,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard'],
       songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutBtn: 'Tutorial', tutNew: 'Start here', howBtn: 'How to play', playBtn: 'Play',
-      rackHint: 'Tap a record to pull it out', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
+      rackHint: 'Swipe to pick a song', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
         '<b>Swipe the brick</b> in any direction to slam it into a wall.',
         'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
@@ -1290,7 +1296,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function tutEnd() {
     tut = null; $('tutBox').hidden = true;
-    goHome(); showView('shelfView');
+    goHome(); openShelf();
     renderSongs(); showBest();
   }
 
@@ -1930,26 +1936,47 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     try { localStorage.setItem('brickpush-size', n); } catch (e) {}
     $('size4').setAttribute('aria-pressed', n === 4); $('size5').setAttribute('aria-pressed', n === 5);
   }
-  // song shelf: a crate of records; tapping (or pointing at) one pulls it out, plays a preview and shows its details
+  // song shelf: a carousel of records; the one snapped to the middle is picked, plays a preview and shows its details
   let pickSong = -1, tutDone = false;
   try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
   try { const k = SONGS.findIndex(x => x.id === localStorage.getItem('brickslam-song')); song = SONGS[Math.max(0, k)] || song; } catch (e) {}
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
-  function pullSong(i) {
+  function centerRec(i, smooth) {
+    const rack = $('rack'), rec = rack.children[i];
+    if (rec) rack.scrollTo({ left: rec.offsetLeft + rec.offsetWidth / 2 - rack.clientWidth / 2, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
+  }
+  function pullSong(i, scroll) {
+    if (scroll) centerRec(i, true);
     if (i === pickSong) return;
     pickSong = i; song = SONGS[i];
     try { localStorage.setItem('brickslam-song', song.id); } catch (e) {}
     renderSongs(); showBest();
-    // bring the pulled record (and its vinyl, which slides out to the right) to the middle of the shelf
-    const rack = $('rack'), rec = rack.children[i];
-    rack.scrollTo({ left: rec.offsetLeft + rec.offsetWidth * 0.67 - rack.clientWidth / 2, behavior: reduceMotion ? 'auto' : 'smooth' });
     const sg = song;
     sfx.load(sg).then(() => { if (song === sg && !$('shelfView').hidden) sfx.preview(sg); }).catch(() => {});
   }
+  function openShelf() {
+    showView('shelfView'); renderSongs();
+    if (!SONGS.length) return;
+    const i = Math.max(0, SONGS.indexOf(song));
+    centerRec(i, false); pickSong = -1; pullSong(i);
+  }
+  // swiping: pick whichever record is nearest the middle once the rack settles
+  let snapT = 0;
+  $('rack').addEventListener('scroll', () => {
+    clearTimeout(snapT);
+    snapT = setTimeout(() => {
+      const rack = $('rack'), mid = rack.scrollLeft + rack.clientWidth / 2;
+      let best = -1, bd = 1e9;
+      [...rack.children].forEach((r, i) => { const d = Math.abs(r.offsetLeft + r.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0 && !$('shelfView').hidden) pullSong(best);
+    }, 90);
+  }, { passive: true });
+  $('flipL').addEventListener('click', () => pullSong(Math.max(0, pickSong - 1), true));
+  $('flipR').addEventListener('click', () => pullSong(Math.min(SONGS.length - 1, pickSong + 1), true));
   function renderSongs() {
     const rack = $('rack');
     if (rack.children.length !== SONGS.length) {
-      rack.textContent = '';
+      rack.textContent = ''; $('dots').textContent = '';
       SONGS.forEach((sg, i) => {
         const b = document.createElement('button');
         b.className = 'rec'; b.setAttribute('role', 'radio');
@@ -1958,9 +1985,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         const sl = document.createElement('span'); sl.className = 'sleeve';
         sl.append(document.createElement('b'), document.createElement('small'));
         b.append(disc, sl);
-        b.addEventListener('click', () => pullSong(i));
-        b.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') pullSong(i); });
+        b.addEventListener('click', () => pullSong(i, true));
         rack.append(b);
+        $('dots').append(document.createElement('i'));
       });
     }
     SONGS.forEach((sg, i) => {
@@ -1968,7 +1995,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       b.setAttribute('aria-checked', i === pickSong); b.setAttribute('aria-label', sg.name[lang]);
       b.querySelector('b').textContent = sg.name[lang];
       b.querySelector('small').textContent = sg.bpm + ' BPM';
+      $('dots').children[i].classList.toggle('on', i === pickSong);
     });
+    $('flipL').disabled = pickSong <= 0; $('flipR').disabled = pickSong >= SONGS.length - 1;
     $('rackHint').hidden = pickSong >= 0; $('detail').hidden = pickSong < 0;
     $('rackHint').textContent = t(SONGS.length ? 'rackHint' : 'rackEmpty');
     if (pickSong >= 0) {
@@ -1996,7 +2025,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   setSize(pickSize);
   $('size4').addEventListener('click', () => setSize(4));
   $('size5').addEventListener('click', () => setSize(5));
-  $('startBtn').addEventListener('click', () => { showView('shelfView'); renderSongs(); });
+  $('startBtn').addEventListener('click', openShelf);
   $('tutBtn').addEventListener('click', () => hooks.beforePlay(() => start(pickSize, true)));
   $('howBtn').addEventListener('click', () => showView('howView'));
   $('shelfBack').addEventListener('click', () => showView('titleView'));
