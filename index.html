@@ -612,7 +612,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       howEnd: '곡이 끝나기 전에 판이 <b>꽉 차면</b> 실패예요.',
-      diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움'],
+      loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움'],
       songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutPick: '처음이라면 여기부터', tutInfo: '따라 하며 배우기', tutDone: '완료 ✓',
       tut: [
@@ -651,7 +651,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       howEnd: 'If the board <b>fills up</b> before the song ends, you fail.',
-      diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard'],
+      loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard'],
       songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutPick: 'Start here', tutInfo: 'Learn by playing', tutDone: 'Done ✓',
       tut: [
@@ -710,6 +710,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const sfx = (() => {
     let ac = null, out = null, mus = null, noiseBuf = null, on = true, ext = false;
     let rev = null, dly = null, duck = null;   // music effects: reverb send, echo send, bus that ducks under the kick
+    // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
+    const buffers = {}; let track = null;
+    const stopTrack = () => { if (track) { try { track.stop(); } catch (e) {} track = null; } };
     try { on = localStorage.getItem('brickpush-sound') !== 'off'; } catch (e) {}
     function ctx() {
       if (!ac) {
@@ -814,11 +817,24 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         [1567.98, 2093].forEach((f, i) => tone(f, t + i * 0.06, 0.3, { type: 'sine', vol: 0.12 }));
       },
       // mode: 'off' | 'title' (calm groove) | 'game' (the chosen song, which is also the game's clock)
+      // fetch and decode a recorded song before it starts (resolves at once for synth songs)
+      load(sg) {
+        if (!sg || !sg.src || buffers[sg.id] || !ctx()) return Promise.resolve();
+        return fetch(sg.src).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+          .then(a => new Promise((res, rej) => ac.decodeAudioData(a, res, rej)))
+          .then(buf => { buffers[sg.id] = buf; });
+      },
       music(m, sg) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
+        stopTrack();
         if (mode === 'game') {
           song = sg; feverOn = false;
           if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; dly.delayTime.value = 0.75 * 60 / song.bpm; }   // one bar of count-in
+          if (ac && song.src && buffers[song.id]) {
+            track = ac.createBufferSource(); track.buffer = buffers[song.id]; track.connect(mus);
+            const at = songT0 - (song.offset || 0);
+            if (at >= ac.currentTime) track.start(at); else track.start(ac.currentTime, ac.currentTime - at);
+          }
         } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; dly.delayTime.value = 0.75 * 60 / 116; }
         musLevel();
       },
@@ -921,6 +937,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         if (i % 4 === 0) tone(i === -16 ? 1760 : 1320, t, 0.05, { type: 'square', vol: 0.09, dest: d });
         return;
       }
+      if (track) return;              // a recorded song is playing: the file is the music
       const bar = Math.floor(i / 16), s16 = i % 16, sx = 15 / song.bpm;
       if (bar >= song.bars) {         // ending: one big chord, then silence
         if (i === song.bars * 16) {
@@ -1763,7 +1780,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // platform hooks: no-ops here; store builds (CrazyGames, Android app) set window.BrickHooks before this script
   const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); }, audio() {} }, window.BrickHooks || {});
   hooks.audio(sfx);   // lets a platform mute the game (CrazyGames settings, ads)
-  function play(n) { hooks.beforePlay(() => start(n)); }
+  // recorded songs are fetched first; if that fails the song falls back to the synth
+  function play(n) {
+    const sg = SONGS[pickSong], ok = $('okBtn');
+    if (!sg.src) return hooks.beforePlay(() => start(n));
+    ok.disabled = true; ok.textContent = t('loading');
+    sfx.load(sg).catch(() => {}).then(() => { ok.disabled = false; ok.textContent = 'OK'; hooks.beforePlay(() => start(n)); });
+  }
   function start(n, tutorial) {
     if (n) N = n;
     song = tutorial ? TUT : SONGS[pickSong];
