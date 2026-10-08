@@ -210,6 +210,14 @@ body.playing .floor { height: 34vh; opacity: .7; }
 }
 .rec .sleeve b { position: relative; font-family: var(--display); font-weight: 400; font-size: calc(var(--S) * .14); line-height: 1.05; text-shadow: 0 0 10px rgba(0, 0, 0, .6); }
 .rec .sleeve small { position: relative; font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
+.rec .cap { display: contents; }
+.rec .sleeve.art { justify-content: flex-end; padding: 0; }
+.rec .sleeve.art::before { display: none; }
+.rec .sleeve > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rec .sleeve.art .cap { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 18px 10px 8px; background: linear-gradient(transparent, rgba(5, 3, 12, .82) 55%); }
+.rec .sleeve.art b { font-size: calc(var(--S) * .105); }
+.rec[aria-checked="true"] .sleeve.art::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 2px var(--glow) inset; pointer-events: none; }
+.rec .sleeve.art small { white-space: nowrap; }
 .rec .disc { position: absolute; inset: 4%; z-index: 1; transition: transform .55s cubic-bezier(.2, .9, .3, 1); }
 .rec .vinyl {
   position: absolute; inset: 0; border-radius: 50%;
@@ -604,6 +612,98 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         '11000010100010011000110000011010100011001101001010110000101100011001100010011001110100000001101111100000001010111000100110101001110110001010100110001011010111001100100111110000101011001011100011110000100010111001101010000111101001101000011110001110010110011101100011100011100110011011110010111000101111001001001110111001001011101011110011110000011011101110111001111010100111111100111010111101111010011011111011001011111111001011100101111101'],
       kinds: { gold: 4, stone: 20 } }
   ];
+  // album sleeves drawn as SVG (200 x 200); a shared glow filter is defined per sleeve
+  const GLOW = (id, c) => `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  const COVERS = {
+    // a tall neon parfait glass: layered cream, berries, wafer and a cherry, on a pink club wall
+    parfait: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gp')}
+      <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0c46"/><stop offset="1" stop-color="#12061f"/></linearGradient>
+      <clipPath id="pcup"><path d="M62 70 L138 70 L124 150 L76 150 Z"/></clipPath></defs>
+      <rect width="200" height="200" fill="url(#pbg)"/>
+      <g opacity=".35" stroke="#ff6ec7" stroke-width="1">${[...Array(9)].map((_, i) => `<line x1="0" y1="${30 + i * 20}" x2="200" y2="${10 + i * 20}"/>`).join('')}</g>
+      <circle cx="150" cy="44" r="26" fill="#7df9ff" opacity=".18"/>
+      <g clip-path="url(#pcup)">
+        <rect x="40" y="70" width="120" height="16" fill="#fff4fb"/>
+        <rect x="40" y="86" width="120" height="16" fill="#ff6ec7"/>
+        <rect x="40" y="102" width="120" height="14" fill="#ffe08a"/>
+        <rect x="40" y="116" width="120" height="16" fill="#7df9ff"/>
+        <rect x="40" y="132" width="120" height="18" fill="#c06cff"/>
+        <g fill="#ff2f7d">${[[70, 94], [92, 92], [114, 95], [128, 91]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')}</g>
+      </g>
+      <path d="M58 58 Q100 40 142 58 Q146 70 138 70 L62 70 Q54 70 58 58 Z" fill="#fff4fb"/>
+      <rect x="112" y="22" width="9" height="44" rx="2" fill="#ffd23d" transform="rotate(18 116 44)"/>
+      <path d="M100 46 q-6 -18 6 -26" stroke="#3ddc84" stroke-width="3" fill="none"/>
+      <circle cx="100" cy="48" r="9" fill="#ff1f5a" filter="url(#gp)"/>
+      <path d="M62 70 L138 70 L124 150 L76 150 Z" fill="none" stroke="#7df9ff" stroke-width="3" filter="url(#gp)"/>
+      <path d="M92 150 L108 150 L106 172 L94 172 Z" fill="#7df9ff" opacity=".8"/>
+      <rect x="74" y="172" width="52" height="6" rx="3" fill="#7df9ff" filter="url(#gp)"/>
+    </svg>`,
+    // a dungeon gate between two torches, a skull keystone and a glowing beat inside the doorway
+    dbeat: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gd')}
+      <radialGradient id="ddoor" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#1fd17a" stop-opacity=".9"/><stop offset="1" stop-color="#04150c"/></radialGradient></defs>
+      <rect width="200" height="200" fill="#0f1210"/>
+      <g fill="#1d241f" stroke="#0a0c0b" stroke-width="2">${[...Array(10)].map((_, r) => [...Array(6)].map((_, c) => `<rect x="${c * 40 - (r % 2) * 20}" y="${r * 20}" width="40" height="20"/>`).join('')).join('')}</g>
+      <path d="M55 190 L55 95 A45 45 0 0 1 145 95 L145 190 Z" fill="url(#ddoor)" stroke="#5c665f" stroke-width="8"/>
+      <g stroke="#3a2a14" stroke-width="5">${[70, 88, 106, 124, 142].map(y => `<line x1="55" y1="${y}" x2="145" y2="${y}" opacity=".0"/>`).join('')}</g>
+      <g stroke="#1fd17a" stroke-width="4" fill="none" filter="url(#gd)">
+        <path d="M68 122 h14 l6 -22 l10 44 l8 -34 l6 12 h20"/>
+      </g>
+      <g fill="#e8e2d0"><circle cx="100" cy="50" r="12"/><rect x="93" y="58" width="14" height="8" rx="2"/></g>
+      <g fill="#0f1210"><circle cx="95" cy="49" r="3.5"/><circle cx="105" cy="49" r="3.5"/></g>
+      ${[28, 172].map(x => `<rect x="${x - 3}" y="96" width="6" height="30" fill="#5a3d1e"/>
+        <path d="M${x} 70 q-12 14 -4 24 q4 6 8 0 q8 -10 -4 -24 Z" fill="#ff8a3d" filter="url(#gd)"/>
+        <path d="M${x} 80 q-5 8 -1 13 q1 2 2 0 q4 -6 -1 -13 Z" fill="#ffe08a"/>`).join('')}
+    </svg>`,
+    // a runner breaking a chain, speed lines and a red sunset
+    runner: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gr')}
+      <linearGradient id="rbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0710"/><stop offset=".62" stop-color="#7a1020"/><stop offset=".62" stop-color="#16050a"/><stop offset="1" stop-color="#0a0306"/></linearGradient>
+      <linearGradient id="rsun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd23d"/><stop offset="1" stop-color="#ff3b3b"/></linearGradient></defs>
+      <rect width="200" height="200" fill="url(#rbg)"/>
+      <circle cx="120" cy="124" r="52" fill="url(#rsun)"/>
+      <g fill="#2a0710">${[0, 1, 2, 3].map(i => `<rect x="60" y="${92 + i * 9}" width="120" height="${2 + i}"/>`).join('')}</g>
+      <rect y="124" width="200" height="76" fill="#16050a"/>
+      <g stroke="#ff3b3b" stroke-width="1.5" opacity=".7">${[...Array(7)].map((_, i) => `<line x1="100" y1="124" x2="${-60 + i * 53}" y2="200"/>`).join('')}</g>
+      <g stroke="#ffd23d" stroke-width="3" stroke-linecap="round" opacity=".85">${[[8, 70, 52], [14, 86, 40], [4, 102, 56]].map(([x, y, l]) => `<line x1="${x}" y1="${y}" x2="${x + l}" y2="${y}"/>`).join('')}</g>
+      <g fill="#0a0306" stroke="#ffd23d" stroke-width="2.5" stroke-linejoin="round" filter="url(#gr)">
+        <circle cx="104" cy="56" r="10"/>
+        <path d="M100 68 L86 102 L68 112 M86 102 L104 120 L100 146 M96 82 L120 92 L132 82 M96 80 L78 76 L66 86" fill="none" stroke-width="9" stroke-linecap="round" stroke="#0a0306"/>
+        <path d="M100 68 L86 102 L68 112 M86 102 L104 120 L100 146 M96 82 L120 92 L132 82 M96 80 L78 76 L66 86" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <g fill="none" stroke="#c9c9d6" stroke-width="3">
+        <ellipse cx="142" cy="78" rx="7" ry="4" transform="rotate(-30 142 78)"/><ellipse cx="154" cy="70" rx="7" ry="4" transform="rotate(30 154 70)"/>
+        <path d="M164 62 l6 -3 M163 70 l8 1" stroke="#ffd23d"/>
+      </g>
+    </svg>`,
+    // a little house with speakers for windows, a disco ball and a dancing roof
+    groove: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gg')}
+      <linearGradient id="gbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".55" stop-color="#ff3fa4"/><stop offset="1" stop-color="#3a0b3a"/></linearGradient></defs>
+      <rect width="200" height="200" fill="url(#gbg)"/>
+      <g opacity=".22" fill="#fff">${[...Array(12)].map((_, i) => `<path d="M100 32 L${-40 + i * 26} 0 L${-28 + i * 26} 0 Z"/>`).join('')}</g>
+      <line x1="100" y1="0" x2="100" y2="20" stroke="#fff" stroke-width="2"/>
+      <circle cx="100" cy="32" r="13" fill="#d8d8e8"/>
+      <g stroke="#7a7a96" stroke-width="1"><line x1="87" y1="28" x2="113" y2="28"/><line x1="87" y1="36" x2="113" y2="36"/><line x1="96" y1="19" x2="96" y2="45"/><line x1="104" y1="19" x2="104" y2="45"/></g>
+      <path d="M40 104 L100 60 L160 104" fill="none" stroke="#1a0820" stroke-width="12" stroke-linejoin="round"/>
+      <rect x="50" y="100" width="100" height="78" fill="#1a0820"/>
+      ${[[76, 128], [124, 128]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="17" fill="#2c1236" stroke="#ffb347" stroke-width="3" filter="url(#gg)"/><circle cx="${x}" cy="${y}" r="7" fill="#ffb347"/>`).join('')}
+      <rect x="90" y="150" width="20" height="28" fill="#ff3fa4" filter="url(#gg)"/>
+      <g fill="#fff" filter="url(#gg)">${[[30, 60], [170, 54], [22, 150], [178, 140]].map(([x, y]) => `<path d="M${x} ${y - 7} L${x + 2} ${y - 2} L${x + 7} ${y} L${x + 2} ${y + 2} L${x} ${y + 7} L${x - 2} ${y + 2} L${x - 7} ${y} L${x - 2} ${y - 2} Z"/>`).join('')}</g>
+      <g fill="#1a0820"><path d="M150 58 v22 a5 4 0 1 1 -3 -4 v-14 l-14 4 v16 a5 4 0 1 1 -3 -4 v-20 Z"/></g>
+      <rect y="178" width="200" height="22" fill="#1a0820"/>
+    </svg>`,
+    // a cryptid peeking from a dark forest under a full moon, only its eyes glowing
+    cryptid: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gc')}
+      <linearGradient id="cbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f6e"/><stop offset="1" stop-color="#07031a"/></linearGradient></defs>
+      <rect width="200" height="200" fill="url(#cbg)"/>
+      <circle cx="140" cy="54" r="30" fill="#c6ff3d" opacity=".9" filter="url(#gc)"/>
+      <circle cx="130" cy="48" r="5" fill="#a6db2b"/><circle cx="150" cy="62" r="4" fill="#a6db2b"/>
+      <g fill="#0b0624">${[[18, 70, 34], [52, 90, 30], [176, 80, 32], [150, 104, 26]].map(([x, y, w]) => `<path d="M${x} ${y} L${x - w / 2} ${y + 50} L${x - w / 4} ${y + 50} L${x - w / 1.6} ${y + 100} L${x + w / 1.6} ${y + 100} L${x + w / 4} ${y + 50} L${x + w / 2} ${y + 50} Z"/><rect x="${x - 3}" y="${y + 100}" width="6" height="40"/>`).join('')}</g>
+      <path d="M70 200 L74 128 Q78 92 100 88 Q122 92 126 128 L130 200 Z" fill="#05020f"/>
+      <path d="M82 96 l-6 -14 l12 8 M118 96 l6 -14 l-12 8" fill="#05020f"/>
+      <g fill="#c6ff3d" filter="url(#gc)"><ellipse cx="91" cy="110" rx="6" ry="3.5"/><ellipse cx="109" cy="110" rx="6" ry="3.5"/></g>
+      <g fill="#2e1680">${[[30, 190, 60], [110, 196, 90], [170, 188, 50]].map(([x, y, w]) => `<ellipse cx="${x}" cy="${y}" rx="${w / 2}" ry="12"/>`).join('')}</g>
+      <g fill="#0b0624">${[...Array(16)].map((_, i) => `<path d="M${i * 13} 200 l4 -${10 + (i * 7) % 12} l4 ${10 + (i * 7) % 12} Z"/>`).join('')}</g>
+    </svg>`,
+  };
   // parse a melody bar into [{ step, note, len }]
   function parseBar(str) {
     const tk = str.trim().split(/\s+/), out = [];
@@ -1983,7 +2083,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         b.style.setProperty('--c1', sg.cover[0]); b.style.setProperty('--c2', sg.cover[1]);
         const disc = document.createElement('span'); disc.className = 'disc'; disc.innerHTML = '<span class="vinyl"></span>';
         const sl = document.createElement('span'); sl.className = 'sleeve';
-        sl.append(document.createElement('b'), document.createElement('small'));
+        if (COVERS[sg.id]) { sl.classList.add('art'); sl.innerHTML = COVERS[sg.id]; }
+        const cap = document.createElement('span'); cap.className = 'cap';
+        cap.append(document.createElement('b'), document.createElement('small'));
+        sl.append(cap);
         b.append(disc, sl);
         b.addEventListener('click', () => pullSong(i, true));
         rack.append(b);
