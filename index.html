@@ -465,8 +465,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   <div class="lvrow"><b id="lvl">Lv.1</b><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div><span class="combo" id="combo"></span></div>
   <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
-    <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
+    <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
     <div class="overlay" id="overOv" hidden>
       <div class="card">
@@ -491,7 +491,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 (() => {
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
-  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane under the board
+  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane above the board
   const css = getComputedStyle(document.documentElement);
   const C = {};
   ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
@@ -666,7 +666,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
       how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
-      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 벽돌을 둘러싼 링이 줄어들어 벽돌에 딱 닿는 순간(판 아래 노트가 왼쪽 원에 닿을 때) 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
+      how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 벽돌을 둘러싼 링이 줄어들어 벽돌에 딱 닿는 순간(판 위 노트가 왼쪽 원에 닿을 때) 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
       how3t: '벽 충전과 피버', how3: '부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차서 빛나는 바를 누르면 피버, 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
       how4t: '곡과 특수 벽돌', how4: '곡이 끝날 때까지 버티면 클리어. 어려운 곡일수록 특수 벽돌이 많이 나와요.',
       kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
@@ -706,7 +706,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
       how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
-      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the shrinking ring lands on the brick (when a note in the lane below hits the left ring) for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
+      how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the shrinking ring lands on the brick (when a note in the lane above hits the left ring) for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
       how3t: 'Charge and Fever', how3: 'Each slam fills that wall\'s bar. Tap a full, glowing bar for Fever and double points. Tap another glowing bar during Fever to raise the multiplier.',
       how4t: 'Songs and special bricks', how4: 'Survive until the song ends to clear it. Harder songs bring more special bricks.',
       kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
@@ -1162,7 +1162,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function layout() {
     const r = stage.getBoundingClientRect();
-    S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12)));
+    S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12 - (song.tutorial ? 76 : 0))));   // tutorial keeps room for hints
     M = Math.max(30, Math.round(S * 0.085));
     B = S - 2 * M;
     cell = B / N;
@@ -1173,6 +1173,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lane.width = S * dpr; lane.height = LH * dpr;
     lane.style.width = S + 'px'; lane.style.height = LH + 'px';
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // tutorial hints sit just above the note lane
+    const tb = $('tutBox').style, ly = lane.offsetTop;
+    tb.top = 'auto'; tb.bottom = (stage.clientHeight - ly + 6) + 'px';
   }
 
   // note lane: every beat is a note sliding left into the hit ring; orange squares above mark bricks about to drop
