@@ -761,6 +761,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     stone: ['#e0deff', '#8f8cff', '#1c1a45'],
     bomb: ['#ffc9cd', '#ff4d5e', '#2a070c']
   };
+  // each wall has its own color (top, right, bottom, left); a plain brick only clears on the wall of its color.
+  // Special bricks fit any wall, and during Fever every brick does.
+  const WALL_COL = [
+    ['#d6fdff', '#2ef2ff', '#06303a'],
+    ['#ffd1ec', '#ff3fa4', '#3a0a2a'],
+    ['#dcffe2', '#4dff7c', '#08361a'],
+    ['#ffe2c9', '#ff8f3a', '#3d1a05']
+  ];
+  const brickCol = b => (b.type || 'n') === 'n' && b.c != null ? WALL_COL[b.c] : KIND_COL[b.type === 'rain' || !KIND_COL[b.type] ? 'n' : b.type];
+  const fits = (b, d) => (b.type || 'n') !== 'n' || b.c == null || b.c === d || fever();
   const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   let beatGlow = 0;   // 0..1, spikes on every beat; bricks and the floor of the board pulse with it
   // ---------- language ----------
@@ -771,7 +781,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       bestHtml: n => '내 최고 기록 <b>' + n + '</b>점', noBest: '아직 기록이 없어요',
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
-      how1t: '쓸어서 밀기', how1: '벽돌을 상하좌우로 쓸면 벽까지 미끄러져 부딪히고 사라져요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요.',
+      how1t: '같은 색 벽으로 밀기', how1: '네 벽은 저마다 색이 있어요. 벽돌을 같은 색 벽 쪽으로 쓸면 미끄러져 부딪히고 사라져요. 색이 다른 벽에 부딪히면 튕겨서 벽 앞에 남아요. 가는 길에 다른 벽돌이 있으면 그 앞에서 멈춰요. 피버 중에는 아무 벽이나 OK!',
       how2t: '박자에 맞춰 밀기', how2: '벽돌은 음악 박자에 맞춰 나와요. 벽돌을 둘러싼 링이 줄어들어 벽돌에 딱 닿는 순간(판 위 노트가 왼쪽 원에 닿을 때) 밀면 PERFECT! 점수 2배에 콤보가 쌓여요. 박자를 놓치면 콤보가 끊겨요.',
       how3t: '벽 충전과 피버', how3: '부딪힌 쪽 벽의 바에 빛이 차올라요. 다 차서 빛나는 바를 누르면 피버, 점수가 두 배예요. 피버 중에 다른 바를 또 누르면 배수가 올라가요.',
       how4t: '곡과 특수 벽돌', how4: '곡이 끝날 때까지 버티면 클리어. 어려운 곡일수록 특수 벽돌이 많이 나와요.',
@@ -785,14 +795,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       tutBtn: '튜토리얼', tutNew: '처음이라면 여기부터', howBtn: '플레이 방법', playBtn: '플레이',
       rackHint: '옆으로 넘겨 곡을 골라 보세요', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
-        '벽돌을 <b>아무 방향으로 쓸어서</b> 벽에 부딪혀 보세요.',
+        '벽마다 색이 있어요. 벽돌을 <b>같은 색 벽 쪽으로</b> 쓸어서 부딪혀 보세요.',
         '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
-        '피버 동안 <b>점수가 두 배</b>예요. 박자에 맞춰 계속 밀어 보세요.',
+        '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 박자에 맞춰 계속 밀어 보세요.',
         '준비 끝! 진짜 곡에서는 벽돌이 음악에 맞춰 떨어져요. <b>판이 꽉 차기 전에</b> 밀어서 곡 끝까지 버티면 클리어예요.'
       ],
-      tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
+      wrongWall: '색이 달라요', tutWrong: '색이 다른 벽이에요. 같은 색 벽으로!', tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
       clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
@@ -811,7 +821,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       bestHtml: n => 'Your best <b>' + n + '</b>', noBest: 'No score yet',
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
-      how1t: 'Swipe to push', how1: 'Swipe a brick up, down, left or right. It slides to the wall, slams, and disappears. A brick in the way stops it right in front.',
+      how1t: 'Match the wall', how1: 'Each wall has its own color. Swipe a brick toward the wall of its color and it slides, slams, and disappears. Hit a wall of another color and it bounces back and stays by the wall. A brick in the way stops it right in front. During Fever any wall works!',
       how2t: 'Push on the beat', how2: 'Bricks drop on the beat of the music. Push the moment the shrinking ring lands on the brick (when a note in the lane above hits the left ring) for a PERFECT: double points and a growing combo. Miss the beat and the combo breaks.',
       how3t: 'Charge and Fever', how3: 'Each slam fills that wall\'s bar. Tap a full, glowing bar for Fever and double points. Tap another glowing bar during Fever to raise the multiplier.',
       how4t: 'Songs and special bricks', how4: 'Survive until the song ends to clear it. Harder songs bring more special bricks.',
@@ -825,14 +835,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       tutBtn: 'Tutorial', tutNew: 'Start here', howBtn: 'How to play', playBtn: 'Play',
       rackHint: 'Swipe to pick a song', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
-        '<b>Swipe the brick</b> in any direction to slam it into a wall.',
+        'Each wall has a color. <b>Swipe the brick toward the wall of its color</b> to slam it.',
         'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
-        'Fever <b>doubles your points</b>. Keep pushing on the beat.',
+        'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing on the beat.',
         'You\'re ready! In a real song, bricks drop with the music. Keep the board from <b>filling up</b> until the song ends to clear it.'
       ],
-      tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
+      wrongWall: 'Wrong color', tutWrong: 'That wall is another color. Find the matching one!', tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
       clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
@@ -1379,6 +1389,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function tutEvent(kind, j) {
     if (!tut || over) return;
     const st = tut.step;
+    if (kind === 'wrong') return tutShow(t('tutWrong'));
     if (st === 0 && kind === 'slam') return tutGo(1);
     if (st === 1 && kind === 'push') {
       if (j < 2) { if (++tut.n >= 3) return tutGo(2); tutShow(t('tutGood')); }
@@ -1429,7 +1440,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (!empty.length) return gameOver();
     const i = empty[Math.floor(Math.random() * empty.length)];
     const type = pickType(bar);
-    const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1 };
+    const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1, c: Math.floor(Math.random() * 4) };
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
     sfx.spawn(blocks.length / (N * N));
@@ -1460,7 +1471,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // slide until the wall or the cell before another brick
     let x = b.x, y = b.y;
     while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; }
-    const toWall = !(x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N);
+    let toWall = !(x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N);
+    if (toWall && !fits(b, d)) {
+      // wrong color: the brick bounces off the wall and stays on the edge cell, and the combo breaks
+      toWall = false; combo = 0;
+      b.bump = { d, t: 1 };
+      pops.push({ x: M + (x + 0.5) * cell, y: M + (y + 0.5) * cell + cell * 0.25, text: t('wrongWall'), life: 1, c: C.danger, small: true });
+      tutEvent('wrong');
+    }
     const sx = b.slide ? b.slide.fx : b.x, sy = b.slide ? b.slide.fy : b.y;
     if (toWall) {
       grid[b.y * N + b.x] = null;
@@ -1468,7 +1486,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // the slam lands on the next 16th note, so every hit is in time with the music
       const dist = d === 0 ? sy : d === 1 ? N - 1 - sx : d === 2 ? N - 1 - sy : sx;
       const s16 = song.spb / 4, s1 = Math.ceil((sp + dist / 28 + 0.03) / s16) * s16;
-      moving.push({ fx: sx, fy: sy, x0: sx, y0: sy, dist, s0: sp, s1, d, j, type: b.type, hp: b.hp });
+      moving.push({ fx: sx, fy: sy, x0: sx, y0: sy, dist, s0: sp, s1, d, j, type: b.type, hp: b.hp, c: b.c });
       if (b === selected) selected = null;
       if (b === hover) hover = null;
       sfx.slide();
@@ -1522,9 +1540,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const ix = m.d === 1 ? S - M : m.d === 3 ? M : cx;
     const iy = m.d === 0 ? M : m.d === 2 ? S - M : cy;
     bars[m.d].spots.push({ pos: (m.d === 0 || m.d === 2) ? m.fx : m.fy, t: 1 });
-    const col = k === 'rain' ? ['#ff5a7a', '#ffcf4a', '#4ae08a', '#4ab0ff', '#b36bff'] : KIND_COL[k].slice(0, 2);
+    const col = k === 'rain' ? ['#ff5a7a', '#ffcf4a', '#4ae08a', '#4ab0ff', '#b36bff'] : brickCol(m).slice(0, 2);
     burst(ix, iy, m.d, col, 14);
-    rings.push({ x: ix, y: iy, life: 1, c: k === 'gold' ? '#ffe68f' : C.glow });
+    rings.push({ x: ix, y: iy, life: 1, c: k === 'gold' ? '#ffe68f' : WALL_COL[m.d][1] });
     shake = Math.max(shake, 4 + Math.min(combo, 6));
     if (k === 'stone' && m.hp > 1) {
       // a stone cracks and bounces back onto the edge cell
@@ -1541,7 +1559,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
           const p = 20 * mult;
           pts += p;
           const bx = M + (b.x + 0.5) * cell, by = M + (b.y + 0.5) * cell;
-          burst(bx, by, -1, KIND_COL[b.type === 'rain' || !KIND_COL[b.type] ? 'n' : b.type].slice(0, 2), 12, 1.3);
+          burst(bx, by, -1, brickCol(b).slice(0, 2), 12, 1.3);
           pops.push({ x: bx, y: by, text: '+' + p, life: 1, hot: true });
         }
       }
@@ -1683,7 +1701,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (type === 'rain') {
       const h = reduceMotion ? 300 : (now / 6) % 360;
       hi = `hsl(${h},95%,74%)`; mid = `hsl(${(h + 60) % 360},85%,58%)`; lo = `hsl(${(h + 60) % 360},65%,30%)`;
-    } else [hi, mid, lo] = KIND_COL[type];
+    } else [hi, mid, lo] = b ? brickCol(b) : KIND_COL[type];
     // neon tube: dark glass body, glowing outline, white-hot core line
     const feverTint = type === 'n' && !over && fever();
     if (feverTint) [hi, mid] = ['#fff6c2', C.fever];
@@ -1762,7 +1780,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function drawBar(d, now, isFever) {
     const bar = bars[d], [x, y, w, h] = barRect(d), horiz = d === 0 || d === 2;
     const r = Math.min(w, h) / 2;
+    const col = WALL_COL[d][1];
     ctx.fillStyle = C.line; rr(x, y, w, h, r); ctx.fill();
+    ctx.fillStyle = hexA(col, 0.3); rr(x, y, w, h, r); ctx.fill();
+    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.shadowColor = col; ctx.shadowBlur = 6; rr(x + 0.75, y + 0.75, w - 1.5, h - 1.5, r); ctx.stroke(); ctx.restore();
     if (isFever) { ctx.strokeStyle = C.fever; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.5; rr(x, y, w, h, r); ctx.stroke(); ctx.globalAlpha = 1; }
     const frac = bar.full ? 1 : bar.charge / CFG[N].need;
     if (frac > 0) {
@@ -1772,8 +1793,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ctx.save();
       if (bar.full) {
         const pulse = reduceMotion ? 0.7 : 0.5 + 0.5 * Math.sin(now / 140);
-        ctx.shadowColor = C.glow; ctx.shadowBlur = 18 + 22 * pulse + 40 * bar.flash;
-        ctx.fillStyle = C.glow; rr(fx, fy, fw, fh, r); ctx.fill();
+        ctx.shadowColor = col; ctx.shadowBlur = 18 + 22 * pulse + 40 * bar.flash;
+        ctx.fillStyle = col; rr(fx, fy, fw, fh, r); ctx.fill();
         ctx.shadowBlur = 0; ctx.globalAlpha = 0.55 + 0.45 * pulse;
         ctx.fillStyle = C.ink;
         const core = Math.min(w, h) * 0.3;
@@ -1781,14 +1802,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         ctx.fill();
       } else {
         ctx.globalAlpha = 0.3 + 0.6 * frac;
-        ctx.shadowColor = C.glow; ctx.shadowBlur = 4 + 12 * frac;
-        ctx.fillStyle = C.glow; rr(fx, fy, fw, fh, r); ctx.fill();
+        ctx.shadowColor = col; ctx.shadowBlur = 4 + 12 * frac;
+        ctx.fillStyle = col; rr(fx, fy, fw, fh, r); ctx.fill();
       }
       ctx.restore();
     }
     for (const s of bar.spots) {
       const c = M + (s.pos + 0.5) * cell;
-      ctx.save(); ctx.globalAlpha = s.t; ctx.fillStyle = C.ink; ctx.shadowColor = C.glow; ctx.shadowBlur = 12;
+      ctx.save(); ctx.globalAlpha = s.t; ctx.fillStyle = C.ink; ctx.shadowColor = col; ctx.shadowBlur = 12;
       const L = cell * 0.6;
       if (horiz) rr(c - L / 2, y, L, h, r); else rr(x, c - L / 2, w, L, r);
       ctx.fill(); ctx.restore();
@@ -1869,12 +1890,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // tutorial hint: chevrons sweeping out of the first brick to show a swipe
     if (tut && tut.step === 0 && blocks[0] && !over && !reduceMotion) {
       const b = blocks[0], cx = M + (b.x + 0.5) * cell, cy = M + (b.y + 0.5) * cell;
-      const dir = b.x < N / 2 ? 1 : -1, ph2 = (now / 900) % 1;
+      const { dx, dy } = DIRS[b.c != null ? b.c : 1], ph2 = (now / 900) % 1;
       ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (let i = 0; i < 3; i++) {
-        const q = (ph2 + i / 3) % 1, x = cx + dir * (cell * 0.2 + q * cell * 1.1), h = cell * 0.14;
+        const q = (ph2 + i / 3) % 1, o = cell * 0.2 + q * cell * 1.1, x = cx + dx * o, y = cy + dy * o, h = cell * 0.14;
         ctx.globalAlpha = Math.sin(q * Math.PI) * 0.9;
-        ctx.beginPath(); ctx.moveTo(x - dir * h, cy - h); ctx.lineTo(x, cy); ctx.lineTo(x - dir * h, cy + h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - dx * h - dy * h, y - dy * h - dx * h); ctx.lineTo(x, y); ctx.lineTo(x - dx * h + dy * h, y - dy * h + dx * h); ctx.stroke();
       }
       ctx.restore();
     }
