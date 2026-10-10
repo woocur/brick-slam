@@ -930,7 +930,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function showBest() {
     best = getBest(song, N);
     $('best').textContent = best.toLocaleString();
-    $('bestLine').innerHTML = best ? t('bestSongHtml', song.name[lang], best.toLocaleString()) : t('noBest');
+    // title line: the single best score across every song, size and difficulty
+    let top = 0, topSong = null;
+    SONGS.forEach(sg => [4, 5].forEach(n => ['-easy', '', '-hard'].forEach(sfx => {
+      let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + n + sfx) || 0; } catch (e) {}
+      if (v > top) { top = v; topSong = sg; }
+    })));
+    $('bestLine').hidden = !top;
+    if (top) $('bestLine').innerHTML = t('bestSongHtml', topSong.name[lang], top.toLocaleString());
   }
   langHooks.push(showBest);
 
