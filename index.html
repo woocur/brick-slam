@@ -282,33 +282,43 @@ body.playing .floor { height: 34vh; opacity: .7; }
 .snd[aria-pressed="false"] .on { display: none; }
 .snd[aria-pressed="false"] .off { display: block; }
 .snd:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
-.topleft { display: flex; gap: 8px; align-items: center; }
 .titlerow { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
 .titlerow .langsw { margin-top: 0; }
 .titlerow .snd { width: 44px; height: 44px; border-radius: 999px; background: var(--board); }
-.hud { display: flex; gap: 16px; font-variant-numeric: tabular-nums; }
-.stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.stat span { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
-.stat b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
-#mult.on { color: var(--fever); text-shadow: 0 0 10px var(--fever); }
-.stat b { text-shadow: 0 0 10px rgba(244, 241, 255, .35); }
-#count.warn { color: var(--danger); }
+/* game HUD: song + progress on top, then score / combo / multiplier and board fill in big type */
+.songhead { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.songhead b { font-family: var(--display); font-weight: 400; font-size: 16px; color: var(--glow); text-shadow: 0 0 10px rgba(46, 242, 255, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.lvbar { width: 100%; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.lvbar i { display: block; height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); transition: width .25s; }
+.hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.hud b { font-family: var(--display); font-weight: 400; line-height: 1; }
+.hud small { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.hl, .hr { display: flex; flex-direction: column; }
+.hr { align-items: flex-end; grid-column: 3; }
+#score { font-size: 34px; text-shadow: 0 0 12px rgba(244, 241, 255, .35); }
+#mult { font-size: 26px; color: var(--muted); }
+#mult.on { color: var(--fever); text-shadow: 0 0 12px var(--fever); }
+#count.warn { color: var(--danger); font-weight: 600; }
+.combo { display: flex; flex-direction: column; align-items: center; min-width: 90px; opacity: 0; transform: scale(.8); transition: opacity .2s, transform .15s; }
+.combo.on { opacity: 1; transform: none; }
+.combo b { font-size: 34px; color: var(--fever); text-shadow: 0 0 14px rgba(255, 216, 77, .8); }
+.combo span { font-family: var(--display); font-size: 11px; letter-spacing: .25em; color: var(--fever); opacity: .8; }
+.combo.pop b { animation: cpop .18s ease-out; }
+/* on tall screens the combo floats big in the free space above the note lane */
+.combo.float { position: absolute; left: 50%; z-index: 1; pointer-events: none; transform: translate(-50%, -50%) scale(.8); }
+.combo.float.on { transform: translate(-50%, -50%); }
+.combo.float b { font-size: clamp(48px, 16vw, 84px); }
+.combo.float span { font-size: 14px; }
+@keyframes cpop { from { transform: scale(1.25); } }
 @media (max-width: 430px) {
   .topbar { gap: 8px; }
-  .topleft { gap: 6px; }
   .topbar .back { padding: 7px 9px; font-size: 13px; }
   .topbar .snd { width: 34px; height: 34px; }
-  .hud { gap: 10px; }
-  .stat b { font-size: 18px; }
-  .stat span { font-size: 10px; }
+  #score, .combo b { font-size: 28px; }
+  #mult { font-size: 22px; }
 }
-.lvrow { display: flex; align-items: center; gap: 10px; }
-.lvrow b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--glow); min-width: 54px; text-shadow: 0 0 10px rgba(46, 242, 255, .7); }
-.lvbar { flex: 1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-.lvbar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); transition: width .25s; }
-.lvrow .combo { font-family: var(--display); font-size: 16px; color: var(--fever); min-width: 76px; text-align: right; opacity: 0; transition: opacity .2s; }
-.lvrow .combo.on { opacity: 1; }
-.feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; opacity: 0; transition: opacity .3s; }
+.game.fever .feverbar { opacity: 1; }
 .feverbar i { display: block; height: 100%; width: 0; background: var(--fever); box-shadow: 0 0 8px var(--fever); }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
@@ -325,6 +335,7 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 .hint { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
 .hint .keys { display: none; }
 @media (hover: hover) and (pointer: fine) { .hint .keys { display: inline; } }
+@media not ((hover: hover) and (pointer: fine)) { .hint { display: none; } }
 kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--ink); }
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .card {
@@ -465,18 +476,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
 <div class="game" id="game" hidden>
   <div class="topbar">
-    <div class="topleft">
-      <button class="back" id="backBtn" data-i18n="quit"></button>
-      <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
-    </div>
-    <div class="hud">
-      <div class="stat"><span data-i18n="score"></span><b id="score">0</b></div>
-      <div class="stat"><span data-i18n="mult"></span><b id="mult">×1</b></div>
-      <div class="stat"><span data-i18n="bricks"></span><b id="count">0/16</b></div>
-      <div class="stat"><span data-i18n="best"></span><b id="best">0</b></div>
-    </div>
+    <button class="back" id="backBtn" data-i18n="quit"></button>
+    <div class="songhead"><b id="lvl">Lv.1</b><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div></div>
+    <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
   </div>
-  <div class="lvrow"><b id="lvl">Lv.1</b><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div><span class="combo" id="combo"></span></div>
+  <div class="hud">
+    <div class="hl"><b id="score">0</b><small><span data-i18n="best"></span> <span id="best">0</span></small></div>
+    <div class="combo" id="combo" aria-live="polite"></div>
+    <div class="hr" id="hudR"><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
+  </div>
   <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
@@ -498,7 +506,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       </div>
     </div>
   </div>
-  <p class="hint"><span data-i18n="hint"></span><span class="keys"> · <span data-i18n="keyboard"></span> <kbd>←↑↓→</kbd> <kbd>F</kbd></span></p>
+  <p class="hint"><span class="keys"><span data-i18n="keyboard"></span> <kbd>←↑↓→</kbd> <kbd>F</kbd></span></p>
 </div>
 
 <script>
@@ -1295,6 +1303,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lane.width = S * dpr; lane.height = LH * dpr;
     lane.style.width = S + 'px'; lane.style.height = LH + 'px';
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // big floating combo when there is room above the note lane (not during the tutorial, whose hints live there)
+    const cb = $('combo'), room = lane.offsetTop, fl = room >= 120 && !song.tutorial;
+    if (fl && cb.parentNode !== stage) { stage.append(cb); cb.classList.add('float'); }
+    if (!fl && cb.parentNode === stage) { $('hudR').before(cb); cb.classList.remove('float'); }
+    if (fl) cb.style.top = room / 2 + 'px'; else cb.style.top = '';
     // tutorial hints sit just above the note lane
     const tb = $('tutBox').style, ly = lane.offsetTop;
     tb.top = 'auto'; tb.bottom = (stage.clientHeight - ly + 6) + 'px';
@@ -2002,7 +2015,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const cShow = combo >= 2 ? combo : 0;
       if (cShow !== shownCombo) {
         shownCombo = cShow;
-        const el = $('combo'); el.classList.toggle('on', cShow > 0); if (cShow) el.textContent = t('combo', cShow);
+        const el = $('combo'); el.classList.toggle('on', cShow > 0);
+        if (cShow) { el.innerHTML = '<b>' + cShow + '</b><span>COMBO</span>'; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
       }
       $('feverfill').style.width = fever() ? ((feverUntil - sp) / feverTotal * 100) + '%' : '0';
     }
