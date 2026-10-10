@@ -218,7 +218,7 @@ body.playing .floor { height: 34vh; opacity: .7; }
 .rec .cap { display: contents; }
 .rec .sleeve.art { justify-content: flex-end; padding: 0; }
 .rec .sleeve.art::before { display: none; }
-.rec .sleeve > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rec .sleeve > svg, .rec .sleeve > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rec .sleeve.art .cap { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 18px 10px 8px; background: linear-gradient(transparent, rgba(5, 3, 12, .82) 55%); }
 .rec .sleeve.art b { font-size: calc(var(--S) * .105); }
 .rec[aria-checked="true"] .sleeve.art::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 2px var(--glow) inset; pointer-events: none; }
@@ -354,7 +354,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 /* result card head: the song's sleeve, its name and difficulty, and the grade on a clear */
 .rhead { display: grid; grid-template-columns: 60px 1fr auto; gap: 12px; align-items: center; }
 .rart { width: 60px; height: 60px; border-radius: 8px; overflow: hidden; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, .2); }
-.rart svg { width: 100%; height: 100%; display: block; }
+.rart svg, .rart img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .rart:empty { display: none; }
 .rhead:has(.rart:empty) { grid-template-columns: 1fr auto; }
 .rsong { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -391,7 +391,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 .board-list .pts { font-family: var(--display); font-size: 18px; }
 .board-list.mine li { grid-template-columns: 44px 1fr auto; padding: 8px 12px; }
 .board-list.mine .art { width: 44px; height: 44px; border-radius: 6px; overflow: hidden; display: block; }
-.board-list.mine .art svg { width: 100%; height: 100%; display: block; }
+.board-list.mine .art svg, .board-list.mine .art img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .board-list .bests { display: grid; grid-template-columns: repeat(3, 58px); gap: 4px; text-align: right; }
 .board-list .bests span { display: flex; flex-direction: column; }
 .board-list .bests small { font-size: 11px; color: var(--muted); }
@@ -654,28 +654,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const GLOW = (id, c) => `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
   const COVERS = {
     // a tall neon parfait glass: layered cream, berries, wafer and a cherry, on a pink club wall
-    parfait: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gp')}
-      <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0c46"/><stop offset="1" stop-color="#12061f"/></linearGradient>
-      <clipPath id="pcup"><path d="M62 70 L138 70 L124 150 L76 150 Z"/></clipPath></defs>
-      <rect width="200" height="200" fill="url(#pbg)"/>
-      <g opacity=".35" stroke="#ff6ec7" stroke-width="1">${[...Array(9)].map((_, i) => `<line x1="0" y1="${30 + i * 20}" x2="200" y2="${10 + i * 20}"/>`).join('')}</g>
-      <circle cx="150" cy="44" r="26" fill="#7df9ff" opacity=".18"/>
-      <g clip-path="url(#pcup)">
-        <rect x="40" y="70" width="120" height="16" fill="#fff4fb"/>
-        <rect x="40" y="86" width="120" height="16" fill="#ff6ec7"/>
-        <rect x="40" y="102" width="120" height="14" fill="#ffe08a"/>
-        <rect x="40" y="116" width="120" height="16" fill="#7df9ff"/>
-        <rect x="40" y="132" width="120" height="18" fill="#c06cff"/>
-        <g fill="#ff2f7d">${[[70, 94], [92, 92], [114, 95], [128, 91]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')}</g>
-      </g>
-      <path d="M58 58 Q100 40 142 58 Q146 70 138 70 L62 70 Q54 70 58 58 Z" fill="#fff4fb"/>
-      <rect x="112" y="22" width="9" height="44" rx="2" fill="#ffd23d" transform="rotate(18 116 44)"/>
-      <path d="M100 46 q-6 -18 6 -26" stroke="#3ddc84" stroke-width="3" fill="none"/>
-      <circle cx="100" cy="48" r="9" fill="#ff1f5a" filter="url(#gp)"/>
-      <path d="M62 70 L138 70 L124 150 L76 150 Z" fill="none" stroke="#7df9ff" stroke-width="3" filter="url(#gp)"/>
-      <path d="M92 150 L108 150 L106 172 L94 172 Z" fill="#7df9ff" opacity=".8"/>
-      <rect x="74" y="172" width="52" height="6" rx="3" fill="#7df9ff" filter="url(#gp)"/>
-    </svg>`,
+    parfait: '<img src="covers/parfait.jpg" alt="" decoding="async">',
     // a dungeon gate between two torches, a skull keystone and a glowing beat inside the doorway
     dbeat: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${GLOW('gd')}
       <radialGradient id="ddoor" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#1fd17a" stop-opacity=".9"/><stop offset="1" stop-color="#04150c"/></radialGradient></defs>
