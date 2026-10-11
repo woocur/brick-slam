@@ -74,6 +74,10 @@ body:not(.playing):has(#titleView:not([hidden])) .floor { opacity: 0; }
   .titlebg::after { content: ""; position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(7, 5, 15, .15) 0%, rgba(7, 5, 15, 0) 30%, rgba(7, 5, 15, .45) 60%, rgba(7, 5, 15, .7) 100%), url("covers/title-bg.jpg") center / auto 100% no-repeat; }
 }
+/* while a song plays, its cover glows faintly behind everything */
+.songbg { position: fixed; inset: -10%; z-index: -2; pointer-events: none; opacity: 0; transition: opacity .8s;
+  background: center / cover no-repeat; filter: blur(18px) saturate(1.3); }
+body.playing .songbg.on { opacity: .7; }
 
 /* ---------- home ---------- */
 .home {
@@ -328,6 +332,8 @@ body:not(.playing):has(#titleView:not([hidden])) .floor { opacity: 0; }
 .combo.float.on { transform: translate(-50%, -50%); }
 .combo.float b { font-size: clamp(48px, 16vw, 84px); }
 .combo.float span { font-size: 14px; }
+.combo.float.low b { font-size: clamp(36px, 11vw, 56px); }
+.combo.float.low span { font-size: 12px; }
 .game:has(#overOv:not([hidden])) .combo.float { visibility: hidden; }
 @keyframes cpop { from { transform: scale(1.25); } }
 @media (max-width: 430px) {
@@ -343,6 +349,10 @@ body:not(.playing):has(#titleView:not([hidden])) .floor { opacity: 0; }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
+/* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
+.stage.hasshow { justify-content: flex-end; padding-bottom: max(40px, 6vh); box-sizing: border-box; }   /* keep the board clear of the phone's gesture bar */
+.show { display: none; flex: 1; min-height: 0; width: 100%; }
+.stage.hasshow .show { display: block; }
 .tutbox {
   position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
   width: min(92%, 420px); box-sizing: border-box; padding: 10px 14px; border-radius: 12px;
@@ -429,6 +439,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 <body>
 
 <div class="titlebg" aria-hidden="true"></div>
+<div class="songbg" id="songBg" aria-hidden="true"></div>
 <div class="floor" aria-hidden="true"></div>
 <main class="home" id="home">
   <section class="view title" id="titleView">
@@ -528,6 +539,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   </div>
   <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
+    <canvas class="show" id="show" aria-hidden="true"></canvas>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
@@ -558,6 +570,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 (() => {
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+  const show = $('show'), sctx = show.getContext('2d'), spec = new Uint8Array(128);
+  let showW = 0, showH = 0, showImg = null, showId = '';
   const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane above the board
   const css = getComputedStyle(document.documentElement);
   const C = {};
@@ -879,7 +893,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   // ---------- sound (Web Audio, synthesized) ----------
   const sfx = (() => {
-    let ac = null, out = null, mus = null, noiseBuf = null, on = true, ext = false;
+    let ac = null, out = null, mus = null, ana = null, noiseBuf = null, on = true, ext = false;
     let rev = null, dly = null, duck = null;   // music effects: reverb send, echo send, bus that ducks under the kick
     // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
     // beats (optional): file time of every beat, for songs whose tempo wanders (AI-made or played live);
@@ -916,6 +930,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         ac = new AC();
         out = ac.createGain(); out.gain.value = 0.9; out.connect(ac.destination);
         mus = ac.createGain(); mus.gain.value = 0; mus.connect(out);
+        ana = ac.createAnalyser(); ana.fftSize = 256; ana.smoothingTimeConstant = 0.72; mus.connect(ana);   // feeds the stage visualizer
         noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
         const d = noiseBuf.getChannelData(0);
         for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -1045,6 +1060,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         musLevel();
       },
       get musicMode() { return mode; },
+      // music spectrum (0..255 per band) for the stage visualizer; false while there is nothing to read
+      spectrum(arr) { if (!ana || !playing) return false; ana.getByteFrequencyData(arr); return true; },
       setFever(f) { feverOn = f; },
       pause(p) { if (!ac) return; if (p) ac.suspend(); else if (playing) ac.resume(); },
       // song position as heard (after output latency), in seconds; null while the audio clock is not running
@@ -1288,14 +1305,60 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lane.width = S * dpr; lane.height = LH * dpr;
     lane.style.width = S + 'px'; lane.style.height = LH + 'px';
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // tall screens: the play area sits low and the song's show fills the space above it (not in the tutorial)
+    const spare = r.height - S - LH - 24 - Math.max(40, innerHeight * 0.06);
+    stage.classList.toggle('hasshow', spare >= 150 && !song.tutorial);
+    if (stage.classList.contains('hasshow')) {
+      showW = show.clientWidth; showH = show.clientHeight;
+      show.width = showW * dpr; show.height = showH * dpr; sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } else showH = 0;
     // big floating combo when there is room above the note lane (not during the tutorial, whose hints live there)
     const cb = $('combo'), room = lane.offsetTop, fl = room >= 120 && !song.tutorial;
     if (fl && cb.parentNode !== stage) { stage.append(cb); cb.classList.add('float'); }
     if (!fl && cb.parentNode === stage) { $('hudR').before(cb); cb.classList.remove('float'); }
-    if (fl) cb.style.top = room / 2 + 'px'; else cb.style.top = '';
+    if (fl) cb.style.top = (showH ? room - 50 : room / 2) + 'px'; else cb.style.top = '';
+    cb.classList.toggle('low', !!showH);
     // tutorial hints sit just above the note lane
     const tb = $('tutBox').style, ly = lane.offsetTop;
     tb.top = 'auto'; tb.bottom = (stage.clientHeight - ly + 6) + 'px';
+  }
+
+  // stage show: the cover bounces on every beat inside a ring of bars that follow the music
+  function drawShow(now) {
+    if (!showH) return;
+    const W = showW, H = showH - 70, cx = W / 2, cy = Math.max(40, H / 2);
+    sctx.clearRect(0, 0, W, showH);
+    if (H < 60) return;
+    if (showId !== song.id) {
+      showId = song.id; showImg = null;
+      const m = /src="([^"]+)"/.exec(COVERS[song.id] || '');
+      if (m) { const im = new Image(); im.src = m[1]; showImg = im; }
+    }
+    const bp = Math.max(0, sp / song.spb), ph = bp - Math.floor(bp), kick = over ? 0 : Math.exp(-ph * 6);
+    const side = Math.min(H * 0.62, W * 0.42), rIn = side * 0.62, n = 48;
+    const live = !over && sfx.spectrum(spec);
+    const cols = WALL_COL.map(c => c[1]);
+    sctx.save(); sctx.lineCap = 'round'; sctx.lineWidth = Math.max(2, side / 34);
+    for (let i = 0; i < n; i++) {
+      // mirror the spectrum so the ring is symmetric; low bands at the top
+      const k = i < n / 2 ? i : n - 1 - i, band = Math.min(spec.length - 1, 2 + Math.floor(k * 1.4));
+      const v = live ? spec[band] / 255 : 0.12 + 0.25 * kick * (0.6 + 0.4 * Math.sin(i * 1.7 + bp));
+      const len = 4 + v * v * Math.min(H * 0.5 - rIn * 0.8, side * 0.55), a = -Math.PI / 2 + i / n * Math.PI * 2;
+      sctx.strokeStyle = cols[Math.floor(i / n * 4) % 4]; sctx.globalAlpha = 0.45 + 0.55 * v;
+      sctx.beginPath(); sctx.moveTo(cx + Math.cos(a) * rIn * 0.98, cy + Math.sin(a) * rIn * 0.98);
+      sctx.lineTo(cx + Math.cos(a) * (rIn + len), cy + Math.sin(a) * (rIn + len)); sctx.stroke();
+    }
+    sctx.restore();
+    // the cover: a rounded square that kicks on the beat, glowing harder in Fever
+    const sz = side * (1 + 0.07 * kick), x = cx - sz / 2, y = cy - sz / 2, rr = sz * 0.12;
+    sctx.save();
+    sctx.shadowColor = mult > 1 ? C.fever || '#ffd84d' : 'rgba(255, 63, 164, .8)'; sctx.shadowBlur = 12 + 26 * kick;
+    sctx.beginPath(); sctx.roundRect ? sctx.roundRect(x, y, sz, sz, rr) : sctx.rect(x, y, sz, sz);
+    sctx.fillStyle = '#120a26'; sctx.fill(); sctx.shadowBlur = 0; sctx.clip();
+    if (showImg && showImg.complete && showImg.naturalWidth) sctx.drawImage(showImg, x, y, sz, sz);
+    sctx.restore();
+    sctx.save(); sctx.globalAlpha = 0.5 + 0.5 * kick; sctx.strokeStyle = 'rgba(255, 255, 255, .55)'; sctx.lineWidth = 1.5;
+    sctx.beginPath(); sctx.roundRect ? sctx.roundRect(x, y, sz, sz, rr) : sctx.rect(x, y, sz, sz); sctx.stroke(); sctx.restore();
   }
 
   // note lane: every beat is a note sliding left into the hit ring; orange squares above mark bricks about to drop
@@ -2026,7 +2089,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     shake = Math.max(0, shake - dt * 45);
     for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt * 2.6; if (rings[i].life <= 0) rings.splice(i, 1); }
     if (banner && (banner.life -= dt / 2.2) <= 0) banner = null;
-    if (grid) { draw(now); drawLane(now); }
+    if (grid) { draw(now); drawLane(now); drawShow(now); }
     requestAnimationFrame(tick);
   }
 
@@ -2048,6 +2111,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('tutBox').hidden = true;
     $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
     document.body.classList.add('playing');
+    const bgImg = !tutorial && /src="([^"]+)"/.exec(COVERS[song.id] || '');
+    $('songBg').classList.toggle('on', !!bgImg); if (bgImg) $('songBg').style.backgroundImage = `url("${bgImg[1]}")`;
     document.documentElement.style.setProperty('--beat', song.spb + 's');
     window.scrollTo(0, 0);
     reset();
