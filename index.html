@@ -350,7 +350,7 @@ body.playing .songbg.on { opacity: .7; }
 canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
 /* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
-.stage.hasshow { justify-content: flex-end; }
+.stage.hasshow { justify-content: flex-end; padding-bottom: max(40px, 6vh); box-sizing: border-box; }   /* keep the board clear of the phone's gesture bar */
 .show { display: none; flex: 1; min-height: 0; width: 100%; }
 .stage.hasshow .show { display: block; }
 .tutbox {
@@ -1306,7 +1306,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lane.style.width = S + 'px'; lane.style.height = LH + 'px';
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // tall screens: the play area sits low and the song's show fills the space above it (not in the tutorial)
-    const spare = r.height - S - LH - 24;
+    const spare = r.height - S - LH - 24 - Math.max(40, innerHeight * 0.06);
     stage.classList.toggle('hasshow', spare >= 150 && !song.tutorial);
     if (stage.classList.contains('hasshow')) {
       showW = show.clientWidth; showH = show.clientHeight;
