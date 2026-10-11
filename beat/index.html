@@ -624,6 +624,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // parts: chord progression [bass root, chord] per bar and a melody (one string per bar of 16 steps:
   // a MIDI note starts a note, '-' holds it, '.' is a rest); kinds: bar a special brick first appears
   const SONGS = [
+    { id: 'arcade', name: { ko: '아케이드 루프', en: 'Arcade Loop' }, bpm: 110, stars: 1, style: 'house',
+      cover: ['#ff3fd8', '#2ef2ff'], previewBar: 36,
+      src: 'songs/arcade-loop.mp3', beats: [0.114,0.660,1.205,1.754,2.302,2.851,3.400,3.949,4.497,5.046,5.595,6.140,6.689,7.237,7.785,8.334,8.882,9.431,9.979,10.528,11.073,11.622,12.171,12.719,13.268,13.817,14.365,14.914,15.463,16.008,16.557,17.105,17.655,18.205,18.755,19.305,19.855,20.405,20.952,21.499,22.046,22.593,23.140,23.688,24.235,24.782,25.329,25.879,26.428,26.976,27.525,28.073,28.622,29.170,29.719,30.264,30.810,31.357,31.904,32.451,32.998,33.547,34.096,34.644,35.193,35.740,36.287,36.834,37.383,37.930,38.477,39.024,39.572,40.119,40.666,41.213,41.759,42.304,42.851,43.398,43.945,44.493,45.040,45.587,46.134,46.681,47.227,47.773,48.318,48.864,49.409,49.956,50.503,51.051,51.598,52.145,52.692,53.239,53.787,54.332,54.878,55.423,55.969,56.515,57.061,57.606,58.152,58.698,59.243,59.789,60.335,60.880,61.426,61.972,62.517,63.063,63.609,64.155,64.701,65.248,65.795,66.342,66.889,67.436,67.983,68.530,69.076,69.622,70.168,70.713,71.259,71.805,72.350,72.896,73.441,73.987,74.533,75.086,75.639,76.192,76.745,77.298,77.851,78.403,78.955,79.499,80.043,80.587,81.132,81.676,82.220,82.765,83.310,83.856,84.400,84.944,85.488,86.032,86.577,87.121,87.665,88.209,88.753,89.297,89.840,90.383,90.927,91.469,92.012,92.555,93.099,93.643,94.187,94.731,95.275,95.819,96.363,96.907,97.450,97.995,98.539,99.083,99.627,100.171,100.715,101.260,101.805,102.350,102.894,103.438,103.982,104.525,105.068,105.611,106.154,106.697,107.241,107.786,108.330,108.875,109.419,109.963,110.507,111.051,111.594,112.137,112.680,113.223,113.767,114.310,114.853,115.396,115.940,116.485,117.029,117.574,118.118,118.663,119.209,119.754],
+      parts: { intro: { prog: [[38, [57, 62, 66]]] }, a: { prog: [[38, [57, 62, 66]]] }, brk: { prog: [[38, [57, 62, 66]]] }, c: { prog: [[38, [57, 62, 66]]] } },
+      map: [[2, 'h', 0, 'intro'], [14, 'ht', 1, 'a'], [1, 'hr', 0, 'brk'], [16, 'tt', 1, 'a'], [1, 'h', 1, 'a'], [13, 'tq', 2, 'c'], [7, 'tt', 1, 'a']],
+      charts: [
+        '000000000000000010000010100010001000100010000100101000001000100010100000100001001000100010001000100010000000101010001000100010000000101010000100100000100000101010001000100000101000100010100000100010000000101010001000100010000000101010100000101000001010000010001000000010011000001010101000100000101010100010000001001010101000010010001100000010011000101010001000000101001000010001100000011000001010000000010010100000101010000000000000',
+        '000000000000000010000010100010101000100010001100101000001010100010100000100011001000100010001010100010001000101010001000100010100000101010100100101000101000101010001010110000101010100010100100101010001000101010101000101010001000101010100010101010001010100010101000000010011000001110101100110000101110100010000101101010101000010110001101001010011100101010001010001111001100010001100010111000001010000101010010110000101010010000000000',
+        '000000000000000010001010100011101000110010101100101010001010110010101000100011101010100010101010100010101100101010001010110010101000101010101100101001101010101011001010110010101010101010101100101110001010101010101010101010101010101010101010101010101010101010101010100010011000011110101110111000101110100110010101101010111001010111001101001010111100111010001011011111001100011001101010111100001110000101110010111000101110010000000000'],
+      kinds: { gold: 4, stone: 18 } },
     // recorded songs (made with Suno): src = the audio file, beats = its measured beat times (see tools/beatgrid.py),
     // charts = easy/normal/hard drawn from the song's own hits, 8 digits per bar (see tools/autochart.py); map then only sets parts
     { id: 'parfait', name: { ko: '네온 파르페', en: 'Neon Parfait' }, bpm: 129, stars: 2, style: 'house',
@@ -681,6 +691,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   ];
   // album sleeves drawn as SVG (200 x 200); a shared glow filter is defined per sleeve
   const COVERS = {
+    arcade: '<img src="covers/arcade.jpg" alt="" decoding="async">',
     // a tall neon parfait glass: layered cream, berries, wafer and a cherry, on a pink club wall
     parfait: '<img src="covers/parfait.jpg" alt="" decoding="async">',
     // a dungeon gate between two torches, a skull keystone and a glowing beat inside the doorway
@@ -898,6 +909,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
     // beats (optional): file time of every beat, for songs whose tempo wanders (AI-made or played live);
     // song positions stay on a steady grid and are warped onto the file through this map
+    // title music: the user's Suno track; after its intro, bars 2-34 loop seamlessly (110 BPM, first downbeat at 0.328 s)
+    const TITLE = { src: 'songs/title.mp3', loopStart: 0.328 + 2 * 240 / 110, loopEnd: 0.328 + 34 * 240 / 110 };
+    let titleBuf = null, titleLoading = null, titleHeard = false;
+    function loadTitle() {
+      if (titleBuf || titleLoading || !ac) return;
+      titleLoading = fetch(TITLE.src).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(a => new Promise((res, rej) => ac.decodeAudioData(a, res, rej)))
+        .then(buf => { titleBuf = buf; if (mode === 'title') api.music('title'); })   // swap the synth groove for the track once it is ready
+        .catch(() => {}).finally(() => { titleLoading = null; });
+    }
     const buffers = {}, loading = {}; let track = null, trackG = null, trackT0 = 0;
     const stopTrack = () => {
       if (!track) return;
@@ -1045,6 +1066,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       music(m, sg) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
         stopTrack();
+        if (mode === 'title') loadTitle();
         if (mode === 'game') {
           song = sg; feverOn = false;
           if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; dly.delayTime.value = 0.75 * 60 / song.bpm; }   // one bar of count-in
@@ -1056,6 +1078,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
             trackG = ac.createGain(); track.connect(trackG); trackG.connect(mus);
             track.start(trackT0);
           }
+        } else if (mode === 'title' && ctx() && titleBuf) {
+          // loop the title track; after the first listen, come back in at the loop instead of the intro
+          const t = ac.currentTime + 0.05;
+          track = ac.createBufferSource(); track.buffer = titleBuf;
+          track.loop = true; track.loopStart = TITLE.loopStart; track.loopEnd = TITLE.loopEnd;
+          trackG = ac.createGain(); trackG.gain.setValueAtTime(0, t); trackG.gain.linearRampToValueAtTime(1, t + 0.4);
+          track.connect(trackG); trackG.connect(mus); track.start(t, titleHeard ? TITLE.loopStart : 0); titleHeard = true;
         } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; dly.delayTime.value = 0.75 * 60 / 116; }
         musLevel();
       },
@@ -1272,7 +1301,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         nextT += skip * st; step += skip;
       }
       while (nextT < ac.currentTime + 0.15) {
-        if (on && !ext) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
+        if (on && !ext && !(mode === 'title' && track)) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
         nextT += 60 / bpm() / 4;
         step++;
       }
