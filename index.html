@@ -884,7 +884,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
     // beats (optional): file time of every beat, for songs whose tempo wanders (AI-made or played live);
     // song positions stay on a steady grid and are warped onto the file through this map
-    const buffers = {}; let track = null, trackG = null, trackT0 = 0;
+    const buffers = {}, loading = {}; let track = null, trackG = null, trackT0 = 0;
     const stopTrack = () => {
       if (!track) return;
       const t = ac.currentTime;
@@ -1014,10 +1014,18 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // mode: 'off' | 'title' (calm groove) | 'game' (the chosen song, which is also the game's clock)
       // fetch and decode a recorded song before it starts (resolves at once for synth songs)
       load(sg) {
-        if (!sg || !sg.src || buffers[sg.id] || !ctx()) return Promise.resolve();
-        return fetch(sg.src).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        if (!sg || !sg.src || !ctx()) return Promise.resolve();
+        if (buffers[sg.id]) { const b = buffers[sg.id]; delete buffers[sg.id]; buffers[sg.id] = b; return Promise.resolve(); }   // mark as most recent
+        if (loading[sg.id]) return loading[sg.id];   // one decode per song, even when the shelf is flipped quickly
+        return (loading[sg.id] = fetch(sg.src).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
           .then(a => new Promise((res, rej) => ac.decodeAudioData(a, res, rej)))
-          .then(buf => { buffers[sg.id] = buf; });
+          .then(buf => {
+            buffers[sg.id] = buf;
+            // a decoded 2-minute song is ~50 MB, so keep only the two most recent (the playing song and the one being previewed)
+            const keep = new Set([sg.id, song && song.id]);
+            Object.keys(buffers).filter(id => !keep.has(id)).forEach(id => { delete buffers[id]; });
+          })
+          .finally(() => { delete loading[sg.id]; }));
       },
       music(m, sg) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
