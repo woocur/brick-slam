@@ -898,6 +898,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // recorded songs: a song with src plays its audio file instead of the synth; offset = seconds into the file of the chart's first beat
     // beats (optional): file time of every beat, for songs whose tempo wanders (AI-made or played live);
     // song positions stay on a steady grid and are warped onto the file through this map
+    // title music: the user's Suno track; after its intro, bars 2-34 loop seamlessly (110 BPM, first downbeat at 0.328 s)
+    const TITLE = { src: 'songs/title.mp3', loopStart: 0.328 + 2 * 240 / 110, loopEnd: 0.328 + 34 * 240 / 110 };
+    let titleBuf = null, titleLoading = null, titleHeard = false;
+    function loadTitle() {
+      if (titleBuf || titleLoading || !ac) return;
+      titleLoading = fetch(TITLE.src).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(a => new Promise((res, rej) => ac.decodeAudioData(a, res, rej)))
+        .then(buf => { titleBuf = buf; if (mode === 'title') api.music('title'); })   // swap the synth groove for the track once it is ready
+        .catch(() => {}).finally(() => { titleLoading = null; });
+    }
     const buffers = {}, loading = {}; let track = null, trackG = null, trackT0 = 0;
     const stopTrack = () => {
       if (!track) return;
@@ -1045,6 +1055,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       music(m, sg) {
         const was = mode; mode = m || 'off'; playing = mode !== 'off';
         stopTrack();
+        if (mode === 'title') loadTitle();
         if (mode === 'game') {
           song = sg; feverOn = false;
           if (ctx()) { step = -16; nextT = ac.currentTime + 0.1; songT0 = nextT + 16 * 15 / song.bpm; dly.delayTime.value = 0.75 * 60 / song.bpm; }   // one bar of count-in
@@ -1056,6 +1067,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
             trackG = ac.createGain(); track.connect(trackG); trackG.connect(mus);
             track.start(trackT0);
           }
+        } else if (mode === 'title' && ctx() && titleBuf) {
+          // loop the title track; after the first listen, come back in at the loop instead of the intro
+          const t = ac.currentTime + 0.05;
+          track = ac.createBufferSource(); track.buffer = titleBuf;
+          track.loop = true; track.loopStart = TITLE.loopStart; track.loopEnd = TITLE.loopEnd;
+          trackG = ac.createGain(); trackG.gain.setValueAtTime(0, t); trackG.gain.linearRampToValueAtTime(1, t + 0.4);
+          track.connect(trackG); trackG.connect(mus); track.start(t, titleHeard ? TITLE.loopStart : 0); titleHeard = true;
         } else if (playing && was !== mode && ctx()) { step = 0; nextT = ac.currentTime + 0.08; dly.delayTime.value = 0.75 * 60 / 116; }
         musLevel();
       },
@@ -1272,7 +1290,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         nextT += skip * st; step += skip;
       }
       while (nextT < ac.currentTime + 0.15) {
-        if (on && !ext) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
+        if (on && !ext && !(mode === 'title' && track)) beat(step, nextT);   // keep time while muted so unmuting stays on the beat
         nextT += 60 / bpm() / 4;
         step++;
       }
