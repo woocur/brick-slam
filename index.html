@@ -207,6 +207,7 @@ body.playing .songbg.on { opacity: .7; }
 .how li em { font-style: normal; }
 #diffTabs button[data-d="0"][aria-pressed="true"] { color: #b9f58a; }
 #diffTabs button[data-d="2"][aria-pressed="true"] { color: var(--hot); }
+#diffTabs button[data-d="3"][aria-pressed="true"] { color: #ff4d5e; }
 #tutBtn small { color: var(--fever); }
 /* song shelf: a carousel of record sleeves; the one in the middle is picked and its vinyl rises out of the sleeve */
 .shelf h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0; }
@@ -416,11 +417,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 .board-list.mine li { grid-template-columns: 44px 1fr auto; padding: 8px 12px; }
 .board-list.mine .art { width: 44px; height: 44px; border-radius: 6px; overflow: hidden; display: block; }
 .board-list.mine .art svg, .board-list.mine .art img { width: 100%; height: 100%; display: block; object-fit: cover; }
-.board-list .bests { display: grid; grid-template-columns: repeat(3, 58px); gap: 4px; text-align: right; }
+.board-list .bests { display: grid; grid-template-columns: repeat(4, 54px); gap: 4px; text-align: right; }
 .board-list .bests span { display: flex; flex-direction: column; }
 .board-list .bests small { font-size: 11px; color: var(--muted); }
 .board-list .bests b { font-family: var(--display); font-weight: 400; font-size: 15px; }
-@media (max-width: 400px) { .board-list .bests { grid-template-columns: repeat(3, 46px); gap: 2px; } .board-list .bests b { font-size: 13px; } }
+@media (max-width: 400px) { .board-list .bests { grid-template-columns: repeat(4, 44px); gap: 2px; } .board-list .bests b { font-size: 12px; } .board-list .bests small { font-size: 10px; } }
 .board-list.mine .who { white-space: normal; overflow: visible; line-height: 1.2; }
 .board-list .empty { display: block; color: var(--muted); font-size: 14px; text-align: center; padding: 18px 14px; }
 .nick { display: flex; gap: 8px; align-items: center; }
@@ -494,7 +495,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       <div class="sizepick">
         <span data-i18n="diffLabel"></span>
         <div class="tabs" role="group" data-i18n-aria="diffLabel" id="diffTabs">
-          <button data-d="0" data-i18n-diff="0"></button><button data-d="1" data-i18n-diff="1"></button><button data-d="2" data-i18n-diff="2"></button>
+          <button data-d="0" data-i18n-diff="0"></button><button data-d="1" data-i18n-diff="1"></button><button data-d="2" data-i18n-diff="2"></button><button data-d="3" data-i18n-diff="3"></button>
         </div>
       </div>
       <div class="sizepick">
@@ -605,16 +606,18 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     { h: 't', t: 'q', q: 's', s: 'x', d: 'D' }
   ];
   let diff = 1;
-  try { const v = localStorage.getItem('brickslam-diff'); if (v !== null) diff = Math.max(0, Math.min(2, +v || 0)); } catch (e) {}
-  const chartPat = (s, bar) => { const p = s.pat[bar], m = DIFF_PAT[s.tutorial ? 1 : diff]; return (m && m[p]) || p; };
-  const barPat = (s, bar) => s.chartBars ? s.chartBars[diff][bar] : PAT[chartPat(s, bar)];
+  try { const v = localStorage.getItem('brickslam-diff'); if (v !== null) diff = Math.max(0, Math.min(3, +v || 0)); } catch (e) {}
+  // Expert plays the Hard chart; what sets it apart is the colors (see COLOR_WALLS)
+  const cdiff = () => Math.min(diff, 2);
+  const chartPat = (s, bar) => { const p = s.pat[bar], m = DIFF_PAT[s.tutorial ? 1 : cdiff()]; return (m && m[p]) || p; };
+  const barPat = (s, bar) => s.chartBars ? s.chartBars[cdiff()][bar] : PAT[chartPat(s, bar)];
   // special bricks: easy keeps only gold and stone and brings them in later; hard brings everything in 4 bars sooner
   function kindsFor(s) {
     const out = {};
     for (const k in s.kinds) {
       const b = s.kinds[k];
       if (diff === 0) { if (k === 'gold' || k === 'stone') out[k] = b + 8; }
-      else out[k] = diff === 2 && b > 0 ? Math.max(1, b - 4) : b;
+      else out[k] = diff >= 2 && b > 0 ? Math.max(1, b - 4) : b;
     }
     return out;
   }
@@ -770,6 +773,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     ['#ffe2c9', '#ff8f3a', '#3d1a05']
   ];
   const brickCol = b => (b.type || 'n') === 'n' && b.c != null ? WALL_COL[b.c] : KIND_COL[b.type === 'rain' || !KIND_COL[b.type] ? 'n' : b.type];
+  // colors by difficulty (players' feedback): Easy/Normal have none (any wall works), Hard has two (top/bottom vs left/right),
+  // Expert has all four and the bars turn on a wrong-color slam; the tutorial teaches the four-color game
+  const nColors = () => song.tutorial || diff >= 3 ? 4 : diff === 2 ? 2 : 1;
+  const wallColors = () => nColors() === 4 ? [0, 1, 2, 3] : nColors() === 2 ? [0, 1, 0, 1] : [0, 0, 0, 0];
   const fits = (b, d) => (b.type || 'n') !== 'n' || b.c == null || b.c === bars[d].c || fever();
   let barRotAt = -1e9;   // when the bars last turned, for the swing animation
   const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
@@ -782,8 +789,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       bestHtml: n => '내 최고 기록 <b>' + n + '</b>점', noBest: '아직 기록이 없어요',
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
-      how1t: '같은 색 바로 던지기', how1: '벽돌을 같은 색 바 쪽으로 밀면 쾅! 사라져요.',
-      how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 하드에서는 네 바가 한 칸씩 돌아요.',
+      how1t: '벽으로 던지기', how1: '벽돌을 바 쪽으로 밀면 쾅! 사라져요. 어려움부터는 같은 색 바에 맞혀야 해요.',
+      how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 어려움은 2색, 아주 어려움은 4색이고 바가 한 칸씩 돌아요.',
       how3t: '박자에 맞춰', how3: '줄어드는 링이 벽돌에 닿을 때 밀면 PERFECT! 콤보가 쌓여요.',
       how4t: '피버', how4: '빛나는 바를 누르면 점수 2배. 피버 중엔 아무 벽이나 OK!',
       how5t: '끝까지 버티기', how5: '곡이 끝나면 클리어, 판이 꽉 차면 실패예요.',
@@ -792,14 +799,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       lvUp: n => 'LEVEL ' + n, combo: n => '콤보 ' + n,
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
-      loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움'],
+      loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움', '아주 어려움'],
       songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutBtn: '튜토리얼', tutNew: '처음이라면 여기부터', howBtn: '플레이 방법', playBtn: '플레이',
       rackHint: '옆으로 넘겨 곡을 골라 보세요', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
         '네 바는 저마다 색이 있어요. 벽돌을 <b>같은 색 바로 던지세요!</b> 같은 색 바에 맞아야 깨져요.',
         '이번엔 일부러 <b>다른 색 바로</b> 던져 보세요.',
-        '색이 다르면 벽돌은 바 앞에 멈추고 <b>하드에서는 네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
+        '색이 다르면 벽돌은 바 앞에 멈추고 <b>아주 어려움에서는 네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
         '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
@@ -826,8 +833,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       bestHtml: n => 'Your best <b>' + n + '</b>', noBest: 'No score yet',
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
-      how1t: 'Same color', how1: 'Push a brick toward the bar of its color. Slam!',
-      how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. On Hard, the four bars also turn one place.',
+      how1t: 'Slam it', how1: 'Push a brick into a bar. Slam! From Hard on, it must be the bar of its color.',
+      how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. Hard has 2 colors; Expert has 4 and the bars turn one place.',
       how3t: 'On the beat', how3: 'Push when the shrinking ring touches the brick for a PERFECT and a combo.',
       how4t: 'Fever', how4: 'Tap a glowing bar for 2× points. Any wall works during Fever!',
       how5t: 'Hold on', how5: 'Last until the song ends to clear. A full board means fail.',
@@ -836,14 +843,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       lvUp: n => 'LEVEL ' + n, combo: n => 'Combo ' + n,
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
-      loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard'],
+      loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard', 'Expert'],
       songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutBtn: 'Tutorial', tutNew: 'Start here', howBtn: 'How to play', playBtn: 'Play',
       rackHint: 'Swipe to pick a song', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
         'Each of the four bars has a color. <b>Throw the brick at the bar of the same color!</b> Only a matching bar breaks it.',
         'Now throw it at a <b>bar of another color</b> on purpose.',
-        'On a wrong color the brick stops in front and <b>on Hard the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
+        'On a wrong color the brick stops in front and <b>on Expert the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
         'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
@@ -885,7 +892,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   $('langSw').addEventListener('click', () => applyLang(lang === 'ko' ? 'en' : 'ko'));
 
   // personal bests are kept per song and board size
-  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n + ['-easy', '', '-hard'][diff];
+  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n + ['-easy', '', '-hard', '-expert'][diff];
   function getBest(s, n) { try { return +localStorage.getItem(bestKey(s, n)) || 0; } catch (e) { return 0; } }
   let best = 0;
   function showBest() {
@@ -893,7 +900,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('best').textContent = best.toLocaleString();
     // title line: the single best score across every song, size and difficulty
     let top = 0, topSong = null;
-    SONGS.forEach(sg => [4, 5].forEach(n => ['-easy', '', '-hard'].forEach(sfx => {
+    SONGS.forEach(sg => [4, 5].forEach(n => ['-easy', '', '-hard', '-expert'].forEach(sfx => {
       let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + n + sfx) || 0; } catch (e) {}
       if (v > top) { top = v; topSong = sg; }
     })));
@@ -1435,7 +1442,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function reset() {
     grid = new Array(N * N).fill(null);
     blocks = []; moving = []; parts = []; pops = [];
-    bars = [0, 1, 2, 3].map(c => ({ charge: 0, full: false, flash: 0, spots: [], c })); barRotAt = -1e9;
+    bars = wallColors().map(c => ({ charge: 0, full: false, flash: 0, spots: [], c })); barRotAt = -1e9;
     score = 0; mult = 1; feverUntil = -1e9; feverTotal = 1; flash = 0;
     sp = -4 * song.spb - 0.1; slotNext = 0; cleared = false; judges = [0, 0, 0]; maxCombo = 0;
     selected = null; drag = null; hover = null; over = false;
@@ -1538,7 +1545,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (!empty.length) return gameOver();
     const i = empty[Math.floor(Math.random() * empty.length)];
     const type = pickType(bar);
-    const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1, c: Math.floor(Math.random() * 4) };
+    const b = { x: i % N, y: Math.floor(i / N), born: now, type, hp: type === 'stone' ? 2 : 1, c: nColors() > 1 ? Math.floor(Math.random() * nColors()) : null };
     grid[i] = b; blocks.push(b);
     if (blocks.length >= N * N) { hud(); return gameOver(); }
     sfx.spawn(blocks.length / (N * N));
@@ -1574,7 +1581,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // wrong color: the brick bounces off the wall and stays on the edge cell, and the combo breaks
       toWall = false; combo = 0;
       b.bump = { d, t: 1 };
-      if (diff === 2 || song.tutorial) {   // only Hard (and the tutorial) turns the bars
+      if (diff >= 3 || song.tutorial) {   // only Expert (and the tutorial) turns the bars
         bars = [bars[3], bars[0], bars[1], bars[2]];   // left -> top -> right -> bottom -> left, charge travels with its bar
         bars.forEach(bb => { bb.spots = []; });
         barRotAt = performance.now();
@@ -2307,7 +2314,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const who = document.createElement('span'); who.className = 'who'; who.textContent = sg.name[lang];
       const bs = document.createElement('span'); bs.className = 'bests';
       t('diffs').forEach((name, d) => {
-        let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + rankTab + ['-easy', '', '-hard'][d]) || 0; } catch (e) {}
+        let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + rankTab + ['-easy', '', '-hard', '-expert'][d]) || 0; } catch (e) {}
         const c = document.createElement('span'); c.innerHTML = `<small>${name}</small><b>${v ? v.toLocaleString() : t('noRecord')}</b>`; bs.append(c);
       });
       li.append(art, who, bs); list.append(li);
