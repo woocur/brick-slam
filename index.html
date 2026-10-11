@@ -723,11 +723,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // stages: one per music style; its songs play back to back (board and score carry over) until the target score.
   // clearing a stage on Expert unlocks its endless run. A style with no songs yet shows as "coming soon".
   const STAGES = [
-    { id: 'neon', name: { ko: '네온 아케이드', en: 'Neon Arcade' }, sub: { ko: '80년대 신스웨이브', en: '80s synthwave' }, cover: ['#ff3fd8', '#2ef2ff'], songs: ['arcade', 'runner'] },
-    { id: 'house', name: { ko: '펑키 하우스', en: 'Funky House' }, sub: { ko: '하우스 · 디스코', en: 'house & disco' }, cover: ['#ff8f3a', '#ff3fa4'], songs: ['groove', 'parfait'] },
-    { id: 'dungeon', name: { ko: '던전 판타지', en: 'Dungeon Fantasy' }, sub: { ko: '어둡고 신비한 던전', en: 'dark fantasy' }, cover: ['#4dff7c', '#8f5bff'], songs: ['dbeat', 'cryptid'] },
-    { id: 'rock', name: { ko: '록 밴드', en: 'Rock Band' }, sub: { ko: '2000년대 록', en: '2000s rock' }, cover: ['#ff4d5e', '#ffd84d'], songs: [] },
-    { id: 'soul', name: { ko: '소울 블루스', en: 'Soul & Blues' }, sub: { ko: '60년대 소울 · 블루스', en: '60s soul & blues' }, cover: ['#4ab0ff', '#b36bff'], songs: [] }
+    { id: 'synth', name: { ko: '신스웨이브', en: 'Synthwave' }, sub: { ko: '80년대 네온 신스', en: '80s neon synths' }, cover: ['#ff3fd8', '#2ef2ff'], songs: ['arcade', 'runner'] },
+    { id: 'house', name: { ko: '하우스', en: 'House' }, sub: { ko: '펑키 하우스 · 디스코', en: 'funky house & disco' }, cover: ['#ff8f3a', '#ff3fa4'], songs: ['groove', 'parfait'] },
+    { id: 'dark', name: { ko: '다크 일렉트로', en: 'Dark Electro' }, sub: { ko: '어둡고 묵직한 전자음', en: 'dark, heavy electronics' }, cover: ['#4dff7c', '#8f5bff'], songs: ['dbeat', 'cryptid'] },
+    { id: 'euro', name: { ko: '유로비트', en: 'Eurobeat' }, sub: { ko: '빠르고 신나는 유로비트', en: 'fast and bright' }, cover: ['#4ab0ff', '#ffd84d'], songs: [] },
+    { id: 'metal', name: { ko: '하드록 · 메탈', en: 'Hard Rock & Metal' }, sub: { ko: '기타가 터지는 록', en: 'loud guitars' }, cover: ['#ff4d5e', '#ffd84d'], songs: [] }
   ];
   STAGES.forEach(st => { st.list = st.songs.map(id => SONGS.find(s => s.id === id)).filter(Boolean); });
   // target score to clear a stage, per difficulty (5 x 5 boards need 1.5x: more room, more bricks)
