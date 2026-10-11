@@ -758,7 +758,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: '랭킹', boardSize: '판 크기', nickLabel: '랭킹 이름', nickPh: '친구들이 알아볼 이름',
       howTitle: '하는 법',
       how1t: '같은 색 바로 던지기', how1: '벽돌을 같은 색 바 쪽으로 밀면 쾅! 사라져요.',
-      how2t: '색이 다르면', how2: '벽 앞에 멈추고, 네 바가 시계 방향으로 한 칸 돌아요.',
+      how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 하드에서는 네 바가 한 칸씩 돌아요.',
       how3t: '박자에 맞춰', how3: '줄어드는 링이 벽돌에 닿을 때 밀면 PERFECT! 콤보가 쌓여요.',
       how4t: '피버', how4: '빛나는 바를 누르면 점수 2배. 피버 중엔 아무 벽이나 OK!',
       how5t: '끝까지 버티기', how5: '곡이 끝나면 클리어, 판이 꽉 차면 실패예요.',
@@ -774,7 +774,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       tut: [
         '네 바는 저마다 색이 있어요. 벽돌을 <b>같은 색 바로 던지세요!</b> 같은 색 바에 맞아야 깨져요.',
         '이번엔 일부러 <b>다른 색 바로</b> 던져 보세요.',
-        '색이 다르면 벽돌은 바 앞에 멈추고 <b>네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
+        '색이 다르면 벽돌은 바 앞에 멈추고 <b>하드에서는 네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
         '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
@@ -802,7 +802,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ranking: 'Ranking', boardSize: 'Board size', nickLabel: 'Name', nickPh: 'Name your friends know',
       howTitle: 'How to play',
       how1t: 'Same color', how1: 'Push a brick toward the bar of its color. Slam!',
-      how2t: 'Wrong color', how2: 'It stops by the wall, and the four bars turn one place clockwise.',
+      how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. On Hard, the four bars also turn one place.',
       how3t: 'On the beat', how3: 'Push when the shrinking ring touches the brick for a PERFECT and a combo.',
       how4t: 'Fever', how4: 'Tap a glowing bar for 2× points. Any wall works during Fever!',
       how5t: 'Hold on', how5: 'Last until the song ends to clear. A full board means fail.',
@@ -818,7 +818,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       tut: [
         'Each of the four bars has a color. <b>Throw the brick at the bar of the same color!</b> Only a matching bar breaks it.',
         'Now throw it at a <b>bar of another color</b> on purpose.',
-        'On a wrong color the brick stops in front and <b>the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
+        'On a wrong color the brick stops in front and <b>on Hard the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
         'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
@@ -1474,9 +1474,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // wrong color: the brick bounces off the wall and stays on the edge cell, and the combo breaks
       toWall = false; combo = 0;
       b.bump = { d, t: 1 };
-      bars = [bars[3], bars[0], bars[1], bars[2]];   // left -> top -> right -> bottom -> left, charge travels with its bar
-      bars.forEach(bb => { bb.spots = []; });
-      barRotAt = performance.now(); sfx.bump();
+      if (diff === 2 || song.tutorial) {   // only Hard (and the tutorial) turns the bars
+        bars = [bars[3], bars[0], bars[1], bars[2]];   // left -> top -> right -> bottom -> left, charge travels with its bar
+        bars.forEach(bb => { bb.spots = []; });
+        barRotAt = performance.now();
+      }
+      sfx.bump();
       pops.push({ x: M + (x + 0.5) * cell, y: M + (y + 0.5) * cell + cell * 0.25, text: t('wrongWall'), life: 1, c: C.danger, small: true });
       tutEvent('wrong');
     }
