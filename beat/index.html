@@ -423,6 +423,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 .board-list .bests b { font-family: var(--display); font-weight: 400; font-size: 15px; }
 @media (max-width: 400px) { .board-list .bests { grid-template-columns: repeat(4, 44px); gap: 2px; } .board-list .bests b { font-size: 12px; } .board-list .bests small { font-size: 10px; } }
 .board-list.mine .who { white-space: normal; overflow: visible; line-height: 1.2; }
+.board-list.mine .who small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.rec.soon .sleeve { filter: saturate(.55) brightness(.75); }
+.rec.soon .sleeve small { color: #ffd84d; opacity: 1; }
+.newbest.unlock { color: #ffd84d; }
+#modeEndless:disabled { opacity: .55; cursor: default; }
 .board-list .empty { display: block; color: var(--muted); font-size: 14px; text-align: center; padding: 18px 14px; }
 .nick { display: flex; gap: 8px; align-items: center; }
 .nick label { font-size: 13px; color: var(--muted); white-space: nowrap; }
@@ -505,6 +510,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
           <button id="size5" aria-pressed="false">5 × 5</button>
         </div>
       </div>
+      <div class="sizepick" id="modeRow">
+        <span data-i18n="modeLabel"></span>
+        <div class="tabs" role="group" data-i18n-aria="modeLabel">
+          <button id="modeStage" aria-pressed="true" data-i18n="modeStage"></button>
+          <button id="modeEndless" aria-pressed="false"></button>
+        </div>
+      </div>
+      <small class="modehint" id="modeHint"></small>
       <button class="btn" id="okBtn" data-i18n="playBtn"></button>
     </div>
   </section>
@@ -534,7 +547,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
   </div>
   <div class="hud">
-    <div class="hl"><b id="score">0</b><small><span data-i18n="best"></span> <span id="best">0</span></small></div>
+    <div class="hl"><b id="score">0</b><small><span id="bestLbl" data-i18n="best"></span> <span id="best">0</span></small></div>
     <div class="combo" id="combo" aria-live="polite"></div>
     <div class="hr" id="hudR"><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
   </div>
@@ -558,6 +571,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         </div>
         <p class="judges" id="judges"></p>
         <p class="newbest" id="newBest" data-i18n="newBest" hidden></p>
+        <p class="newbest unlock" id="unlockNote" data-i18n="unlockNote" hidden></p>
         <p class="ranked" id="ranked" hidden></p>
         <button class="btn" id="retryBtn" data-i18n="retry"></button>
         <button class="btn alt" id="menuBtn" data-i18n="home"></button>
@@ -570,7 +584,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+  const cv = $('cv'), ctx = cv.getContext('2d'), stageEl = $('stage');
   const show = $('show'), sctx = show.getContext('2d'), spec = new Uint8Array(128);
   let showW = 0, showH = 0, showImg = null, showId = '';
   const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane above the board
@@ -706,6 +720,20 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     // a cryptid peeking from a dark forest under a full moon, only its eyes glowing
     cryptid: '<img src="covers/cryptid.jpg" alt="" decoding="async">',
   };
+  // stages: one per music style; its songs play back to back (board and score carry over) until the target score.
+  // clearing a stage on Expert unlocks its endless run. A style with no songs yet shows as "coming soon".
+  const STAGES = [
+    { id: 'neon', name: { ko: '네온 아케이드', en: 'Neon Arcade' }, sub: { ko: '80년대 신스웨이브', en: '80s synthwave' }, cover: ['#ff3fd8', '#2ef2ff'], songs: ['arcade', 'runner'] },
+    { id: 'house', name: { ko: '펑키 하우스', en: 'Funky House' }, sub: { ko: '하우스 · 디스코', en: 'house & disco' }, cover: ['#ff8f3a', '#ff3fa4'], songs: ['groove', 'parfait'] },
+    { id: 'dungeon', name: { ko: '던전 판타지', en: 'Dungeon Fantasy' }, sub: { ko: '어둡고 신비한 던전', en: 'dark fantasy' }, cover: ['#4dff7c', '#8f5bff'], songs: ['dbeat', 'cryptid'] },
+    { id: 'rock', name: { ko: '록 밴드', en: 'Rock Band' }, sub: { ko: '2000년대 록', en: '2000s rock' }, cover: ['#ff4d5e', '#ffd84d'], songs: [] },
+    { id: 'soul', name: { ko: '소울 블루스', en: 'Soul & Blues' }, sub: { ko: '60년대 소울 · 블루스', en: '60s soul & blues' }, cover: ['#4ab0ff', '#b36bff'], songs: [] }
+  ];
+  STAGES.forEach(st => { st.list = st.songs.map(id => SONGS.find(s => s.id === id)).filter(Boolean); });
+  // target score to clear a stage, per difficulty (5 x 5 boards need 1.5x: more room, more bricks)
+  const TARGET = (window.BrickHooks && window.BrickHooks.target) || [3000, 4500, 6000, 7000];   // play tests can swap in their own
+  const targetFor = (n = N) => Math.round(TARGET[diff] * (n === 5 ? 1.5 : 1));
+  const targetGoal = () => targetFor(pickSize);
   // parse a melody bar into [{ step, note, len }]
   function parseBar(str) {
     const tk = str.trim().split(/\s+/), out = [];
@@ -750,6 +778,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   let grid, blocks, moving, parts, pops, bars, score, mult, feverUntil, feverTotal, flash;
   let over = true, selected = null, drag = null, hover = null, last = performance.now();
   // rhythm state: sp = song position in seconds as heard (negative during the count-in)
+  let stage = STAGES[0], endless = false, run = null, swapping = false;   // run: the stage's song order and how many songs have played
   let song = SONGS[0] || TUT, sp = 0, slotNext = 0, cleared = false, judges = [0, 0, 0], maxCombo = 0, calib = 0;
   let combo = 0, banner = null, shake = 0, rings = [], forceType = null, shownCombo = 0, feverShown = false, kinds = {};
   const KINDS = { gold: 'newGold', stone: 'newStone', bomb: 'newBomb', rain: 'newRain' };
@@ -793,16 +822,22 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 어려움은 2색, 아주 어려움은 4색이고 바가 한 칸씩 돌아요.',
       how3t: '박자에 맞춰', how3: '줄어드는 링이 벽돌에 닿을 때 밀면 PERFECT! 콤보가 쌓여요.',
       how4t: '피버', how4: '빛나는 바를 누르면 점수 2배. 피버 중엔 아무 벽이나 OK!',
-      how5t: '끝까지 버티기', how5: '곡이 끝나면 클리어, 판이 꽉 차면 실패예요.',
+      how5t: '목표 점수', how5: '곡이 이어서 나와요. 목표 점수를 내면 클리어, 판이 꽉 차면 실패예요.',
       howKinds: '어려운 곡엔 특수 벽돌도 나와요',
       kGold: '금: 점수 3배', kStone: '돌: 두 번 쳐야 깨짐', kBomb: '폭탄: 주변까지 펑', kRain: '무지개: 바 가득 충전',
       lvUp: n => 'LEVEL ' + n, combo: n => '콤보 ' + n,
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움', '아주 어려움'],
-      songPick: '곡 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
+      songPick: '스테이지 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutBtn: '튜토리얼', tutNew: '처음이라면 여기부터', howBtn: '플레이 방법', playBtn: '플레이',
-      rackHint: '옆으로 넘겨 곡을 골라 보세요', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
+      rackHint: '옆으로 넘겨 스테이지를 골라 보세요',
+      soon: '곧 공개', soonInfo: '이 스타일의 곡을 만들고 있어요. 곧 열려요!', nSongs: n => '곡 ' + n + '개',
+      modeLabel: '모드', modeStage: '스테이지', endless: '무제한', endlessBest: n => '무제한 최고 ' + n,
+      goalHint: n => '곡이 이어서 나와요. ' + n + '점을 내면 클리어!', lockHint: '아주 어려움을 깨면 무제한이 열려요.',
+      endlessHint: '곡이 끝없이 이어지고 갈수록 벽돌이 많아져요. 판이 찰 때까지 버티세요!',
+      toGo: n => '클리어까지 ' + n + '점', songN: n => n + '번째 곡', songsPlayed: '곡', endlessOver: '무제한 끝!',
+      unlockNote: '무제한 모드가 열렸어요!', goal: '목표', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
         '네 바는 저마다 색이 있어요. 벽돌을 <b>같은 색 바로 던지세요!</b> 같은 색 바에 맞아야 깨져요.',
         '이번엔 일부러 <b>다른 색 바로</b> 던져 보세요.',
@@ -811,7 +846,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
         '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 박자에 맞춰 계속 밀어 보세요.',
-        '준비 끝! 진짜 곡에서는 벽돌이 음악에 맞춰 떨어져요. <b>판이 꽉 차기 전에</b> 밀어서 곡 끝까지 버티면 클리어예요.'
+        '준비 끝! 스테이지에서는 벽돌이 음악에 맞춰 떨어지고 곡이 이어서 나와요. <b>판이 꽉 차기 전에</b> 목표 점수를 내면 클리어예요.'
       ],
       wrongWall: '색이 달라요', tutWrong: '색이 달라서 바가 돌았어요. 같은 색 바를 다시 찾아봐요!', tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
       clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
@@ -837,16 +872,22 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. Hard has 2 colors; Expert has 4 and the bars turn one place.',
       how3t: 'On the beat', how3: 'Push when the shrinking ring touches the brick for a PERFECT and a combo.',
       how4t: 'Fever', how4: 'Tap a glowing bar for 2× points. Any wall works during Fever!',
-      how5t: 'Hold on', how5: 'Last until the song ends to clear. A full board means fail.',
+      how5t: 'Target score', how5: 'Songs play back to back. Reach the target score to clear; a full board means fail.',
       howKinds: 'Harder songs add special bricks',
       kGold: 'Gold: 3× points', kStone: 'Stone: takes two slams', kBomb: 'Bomb: blasts its neighbors', kRain: 'Rainbow: fills a bar',
       lvUp: n => 'LEVEL ' + n, combo: n => 'Combo ' + n,
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard', 'Expert'],
-      songPick: 'Pick a song', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
+      songPick: 'Pick a stage', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutBtn: 'Tutorial', tutNew: 'Start here', howBtn: 'How to play', playBtn: 'Play',
-      rackHint: 'Swipe to pick a song', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
+      rackHint: 'Swipe to pick a stage',
+      soon: 'Coming soon', soonInfo: 'Songs in this style are on the way!', nSongs: n => n + ' songs',
+      modeLabel: 'Mode', modeStage: 'Stage', endless: 'Endless', endlessBest: n => 'Endless best ' + n,
+      goalHint: n => 'Songs play back to back. Score ' + n + ' to clear!', lockHint: 'Clear it on Expert to open Endless.',
+      endlessHint: 'Songs never stop and more bricks come each song. Last as long as you can!',
+      toGo: n => n + ' to clear', songN: n => 'Song ' + n, songsPlayed: 'Songs', endlessOver: 'Endless over!',
+      unlockNote: 'Endless mode unlocked!', goal: 'Target', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
         'Each of the four bars has a color. <b>Throw the brick at the bar of the same color!</b> Only a matching bar breaks it.',
         'Now throw it at a <b>bar of another color</b> on purpose.',
@@ -855,7 +896,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
         'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing on the beat.',
-        'You\'re ready! In a real song, bricks drop with the music. Keep the board from <b>filling up</b> until the song ends to clear it.'
+        'You\'re ready! In a stage, bricks drop with the music and songs play back to back. Reach the target score before the board <b>fills up</b> to clear it.'
       ],
       wrongWall: 'Wrong color', tutWrong: 'Wrong color, so the bars turned. Find the matching bar again!', tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
       clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
@@ -891,19 +932,27 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   $('langSw').addEventListener('click', () => applyLang(lang === 'ko' ? 'en' : 'ko'));
 
-  // personal bests are kept per song and board size
-  const bestKey = (s, n) => 'brickslam-r-' + s.id + '-' + n + ['-easy', '', '-hard', '-expert'][diff];
-  function getBest(s, n) { try { return +localStorage.getItem(bestKey(s, n)) || 0; } catch (e) { return 0; } }
+  // personal bests are kept per stage, board size, difficulty and mode (stage or endless)
+  const DSUF = ['-easy', '', '-hard', '-expert'];
+  const bestKey = (s, n, d = diff, e = endless) => 'brickslam-s-' + s.id + '-' + n + DSUF[d] + (e ? '-endless' : '');
+  const lsNum = k => { try { return +localStorage.getItem(k) || 0; } catch (e) { return 0; } };
+  function getBest(s, n, d, e) { return lsNum(bestKey(s, n, d, e)); }
+  // a stage cleared on Expert (either board size) opens its endless run
+  const clearKey = (s, d) => 'brickslam-clear-' + s.id + DSUF[d];
+  const endlessOpen = s => !!lsNum(clearKey(s, 3));
   let best = 0;
   function showBest() {
-    best = getBest(song, N);
-    $('best').textContent = best.toLocaleString();
-    // title line: the single best score across every song, size and difficulty
+    best = song.tutorial ? 0 : getBest(stage, N);
+    // in a stage run the HUD shows the target instead of the best
+    const goal = !$('game').hidden && run && !endless && !song.tutorial;
+    $('bestLbl').textContent = t(goal ? 'goal' : 'best');
+    $('best').textContent = (goal ? targetFor() : best).toLocaleString();
+    // title line: the single best score across every stage, size, difficulty and mode
     let top = 0, topSong = null;
-    SONGS.forEach(sg => [4, 5].forEach(n => ['-easy', '', '-hard', '-expert'].forEach(sfx => {
-      let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + n + sfx) || 0; } catch (e) {}
+    STAGES.forEach(sg => [4, 5].forEach(n => [0, 1, 2, 3].forEach(d => [false, true].forEach(e => {
+      const v = getBest(sg, n, d, e);
       if (v > top) { top = v; topSong = sg; }
-    })));
+    }))));
     $('bestLine').hidden = !top;
     if (top) $('bestLine').innerHTML = t('bestSongHtml', topSong.name[lang], top.toLocaleString());
   }
@@ -1329,7 +1378,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   applyLang(lang);
 
   function layout() {
-    const r = stage.getBoundingClientRect();
+    const r = stageEl.getBoundingClientRect();
     S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12 - (song.tutorial ? 76 : 0))));   // tutorial keeps room for hints
     M = Math.max(30, Math.round(S * 0.085));
     B = S - 2 * M;
@@ -1343,15 +1392,15 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // tall screens: the play area sits low and the song's show fills the space above it (not in the tutorial)
     const spare = r.height - S - LH - 24 - Math.max(40, innerHeight * 0.06);
-    stage.classList.toggle('hasshow', spare >= 150 && !song.tutorial);
-    if (stage.classList.contains('hasshow')) {
+    stageEl.classList.toggle('hasshow', spare >= 150 && !song.tutorial);
+    if (stageEl.classList.contains('hasshow')) {
       showW = show.clientWidth; showH = show.clientHeight;
       show.width = showW * dpr; show.height = showH * dpr; sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     } else showH = 0;
     // big floating combo when there is room above the note lane (not during the tutorial, whose hints live there)
     const cb = $('combo'), room = lane.offsetTop, fl = room >= 120 && !song.tutorial;
-    if (fl && cb.parentNode !== stage) { stage.append(cb); cb.classList.add('float'); }
-    if (!fl && cb.parentNode === stage) { $('hudR').before(cb); cb.classList.remove('float'); }
+    if (fl && cb.parentNode !== stageEl) { stageEl.append(cb); cb.classList.add('float'); }
+    if (!fl && cb.parentNode === stageEl) { $('hudR').before(cb); cb.classList.remove('float'); }
     if (fl) cb.style.top = (showH ? room - 50 : room / 2) + 'px'; else cb.style.top = '';
     cb.classList.toggle('low', !!showH);
     // tutorial hints sit just above the note lane
@@ -1449,11 +1498,18 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     combo = 0; banner = null; shake = 0; rings = []; forceType = null; lastJ = null;
     feverShown = false; shownCombo = 0; $('game').classList.remove('fever'); $('combo').classList.remove('on');
     kinds = kindsFor(song);
-    $('lvl').textContent = song.tutorial ? song.name[lang] : song.name[lang] + ' · ' + t('diffs')[diff];
+    songLabel();
     layout(); hud(); hudSong();
   }
 
-  function hudSong() { $('lvfill').style.width = Math.max(0, Math.min(1, sp / song.len)) * 100 + '%'; }
+  function songLabel() {
+    $('lvl').textContent = song.tutorial ? song.name[lang] : song.name[lang] + ' · ' + t('diffs')[diff] + (endless ? ' · ∞' : '');
+  }
+  // top bar: how close the score is to the stage's target (the song's progress in the tutorial and endless runs)
+  function hudSong() {
+    const f = song.tutorial || endless || !run ? sp / song.len : score / targetFor();
+    $('lvfill').style.width = Math.max(0, Math.min(1, f)) * 100 + '%';
+  }
 
   function pickType(bar) {
     if (forceType) { const k = forceType; forceType = null; return k; }
@@ -1528,6 +1584,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
     const now = performance.now();
     for (let i = 0; i < barPat(song, bar)[s8] && !over; i++) spawn(now, bar);
+    // endless: every song after the first adds stray bricks on the beat, so the board fills faster and faster
+    if (endless && run && s8 % 2 === 0 && !over && Math.random() < Math.min(0.5, 0.08 * run.done)) spawn(now, bar);
   }
 
   const fever = () => sp < feverUntil;
@@ -1700,23 +1758,29 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     hooks.gameStop();
     score = Math.floor(score);
     const isBest = score > best;
-    if (!won) sfx.music('off');   // a clear lets the closing chord ring out
+    if (!won || sp < song.len - 1) sfx.music('off');   // a clear on the last note lets the closing chord ring out
     sfx.over(won || (isBest && score > 0));
-    if (isBest && !song.tutorial) { best = score; try { localStorage.setItem(bestKey(song, N), best); } catch (e) {} }
+    if (isBest && !song.tutorial) { best = score; try { localStorage.setItem(bestKey(stage, N), best); } catch (e) {} }
+    let unlocked = false;
+    if (won && run && !endless) {
+      unlocked = diff === 3 && !endlessOpen(stage);
+      try { localStorage.setItem(clearKey(stage, diff), 1); } catch (e) {}
+    }
+    $('unlockNote').hidden = !unlocked;
     showBest();
     renderSongs();
-    $('overTitle').textContent = t(won ? 'clearTitle' : 'overTitle');
+    $('overTitle').textContent = t(won ? 'clearTitle' : endless ? 'endlessOver' : 'overTitle');
     const tot = judges[0] + judges[1] + judges[2], acc = tot ? (judges[0] + 0.6 * judges[1]) / tot : 0;
     $('grade').textContent = acc >= 0.9 ? 'S' : acc >= 0.75 ? 'A' : acc >= 0.55 ? 'B' : 'C';
     $('grade').classList.toggle('s', acc >= 0.9);
-    const art = $('rArt'); art.innerHTML = song.tutorial ? '' : (COVERS[song.id] || '');
-    art.style.background = song.cover ? `linear-gradient(155deg, ${song.cover[0]}, #160b2a 70%)` : '';
-    $('rSong').textContent = song.name[lang];
-    $('rDiff').textContent = song.tutorial ? '' : t('diffs')[diff] + ' · ' + N + ' × ' + N;
+    const art = $('rArt'); art.innerHTML = song.tutorial ? '' : stageArt(stage);
+    art.style.background = song.tutorial ? '' : `linear-gradient(155deg, ${stage.cover[0]}, #160b2a 70%)`;
+    $('rSong').textContent = song.tutorial ? song.name[lang] : stage.name[lang];
+    $('rDiff').textContent = song.tutorial ? '' : t('diffs')[diff] + ' · ' + N + ' × ' + N + (endless ? ' · ' + t('endless') : '');
     $('grade').hidden = !won;
     const jn = t('judgeNames');
     $('judges').innerHTML = ['p', 'g', 'm'].map((c, i) => `<span class="${c}">${jn[i]} <b>${judges[i]}</b></span>`).join('') +
-      `<span>${t('maxCombo')} <b>${maxCombo}</b></span>`;
+      `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
     $('finalScore').textContent = score.toLocaleString();
     $('finalBest').textContent = best.toLocaleString();
     $('newBest').hidden = !isBest || score === 0;
@@ -2079,12 +2143,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!over) {
+    if (!over && !swapping) {
       // the music is the clock; fall back to frame time if audio is not running
       const a = sfx.clock();
       sp = a == null ? sp + dt : Math.abs(a - sp - dt) < 0.03 ? sp + dt + (a - sp - dt) * 0.25 : a;
       while (!over && sp >= slotNext * song.spb / 2) playSlot(slotNext++);
-      if (!over && sp >= song.len) { if (tut) tutEnd(); else gameOver(true); }
+      if (!over && sp >= song.len) { if (tut) tutEnd(); else nextSong(); }
+      if (!over && run && !endless && score >= targetFor()) gameOver(true);
       if (mult > 1 && !fever()) { mult = 1; hud(); sfx.feverEnd(); }
       hudSong();
       const step = SLIDE_SPEED * dt;
@@ -2131,30 +2196,67 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   // platform hooks: no-ops here; store builds (CrazyGames, Android app) set window.BrickHooks before this script
   const hooks = Object.assign({ gameStart() {}, gameStop() {}, beforePlay(go) { go(); }, audio() {} }, window.BrickHooks || {});
-  if (hooks.test) hooks.test({ state: () => ({ sp, song, blocks, judges, over, cleared, N, grid, wall: bars.map(bb => bb.c) }), push });   // automated play tests
+  if (hooks.test) hooks.test({ state: () => ({ sp, song, stage, run, score, endless, swapping, blocks, judges, over, cleared, N, grid, wall: bars.map(bb => bb.c) }), push });   // automated play tests
   hooks.audio(sfx);   // lets a platform mute the game (CrazyGames settings, ads)
   // recorded songs are fetched first; if that fails the song falls back to the synth
+  // a stage plays its songs in a shuffled order, looping, and never the same song twice in a row
+  function shuffled(list, avoid) {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    if (a.length > 1 && a[0] === avoid) a.push(a.shift());
+    return a;
+  }
+  const runSong = k => run.order[k % run.order.length];
   function play(n) {
-    const sg = SONGS[pickSong], ok = $('okBtn');
-    if (!sg.src) return hooks.beforePlay(() => start(n));
+    if (!stage.list.length) return;
+    endless = pickMode === 1 && endlessOpen(stage);
+    run = { order: shuffled(stage.list), i: 0, done: 0 };
+    const sg = runSong(0), ok = $('okBtn');
     ok.disabled = true; ok.textContent = t('loading');
     sfx.load(sg).catch(() => {}).then(() => { ok.disabled = false; ok.textContent = t('playBtn'); hooks.beforePlay(() => start(n)); });
   }
+  // when a song ends the next one comes in after a count-in; the board, score and combo carry over
+  function nextSong() {
+    run.done++; run.i++;
+    if (run.i % run.order.length === 0) run.order = shuffled(stage.list, run.order[run.order.length - 1]);
+    const sg = runSong(run.i);
+    for (const m of moving.splice(0)) hit(m, performance.now());   // bricks still flying land now
+    feverUntil = -1e9;
+    swapping = true;
+    sfx.load(sg).catch(() => {}).then(() => {
+      if (over || !run) return;
+      swapping = false;
+      song = sg; sp = -4 * song.spb - 0.1; slotNext = 0;
+      kinds = {}; for (const k in kindsFor(song)) kinds[k] = 0;   // special bricks were introduced in the first song
+      setSongLook(); songLabel(); hudSong();
+      banner = { title: song.name[lang], sub: endless ? t('songN', run.done + 1) : t('toGo', Math.max(0, targetFor() - Math.floor(score)).toLocaleString()), life: 1 };
+      sfx.music('game', song);
+      preloadNext();
+    });
+  }
+  // fetch the next song while this one plays
+  function preloadNext() { if (run && !tut) { const nx = runSong(run.i + 1); if (nx !== song) sfx.load(nx).catch(() => {}); } }
+  function setSongLook() {
+    const bgImg = !tut && /src="([^"]+)"/.exec(COVERS[song.id] || '');
+    $('songBg').classList.toggle('on', !!bgImg); if (bgImg) $('songBg').style.backgroundImage = `url("${bgImg[1]}")`;
+    document.documentElement.style.setProperty('--beat', song.spb + 's');
+  }
   function start(n, tutorial) {
     if (n) N = n;
-    song = tutorial ? TUT : SONGS[pickSong];
+    if (tutorial) run = null;   // play() sets up the stage's run
+    swapping = false;
+    song = tutorial ? TUT : runSong(0);
     tut = tutorial ? { step: 0, n: 0, at: 0 } : null;
     $('tutBox').hidden = true;
     $('home').hidden = true; $('game').hidden = false; $('overOv').hidden = true;
     document.body.classList.add('playing');
-    const bgImg = !tutorial && /src="([^"]+)"/.exec(COVERS[song.id] || '');
-    $('songBg').classList.toggle('on', !!bgImg); if (bgImg) $('songBg').style.backgroundImage = `url("${bgImg[1]}")`;
-    document.documentElement.style.setProperty('--beat', song.spb + 's');
+    setSongLook();
     window.scrollTo(0, 0);
     reset();
     showBest();
     hooks.gameStart();
     sfx.music('game', song);
+    preloadNext();
     if (tut) { $('lvl').textContent = song.name[lang]; tutShow(); }
   }
   function showView(id) {
@@ -2164,7 +2266,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function goHome() {
     if (!over) hooks.gameStop();
-    tut = null; $('tutBox').hidden = true;
+    tut = null; swapping = false; $('tutBox').hidden = true;
     sfx.music('title');
     over = true; drag = null;
     $('game').hidden = true; $('overOv').hidden = true; $('home').hidden = false;
@@ -2181,10 +2283,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     try { localStorage.setItem('brickpush-size', n); } catch (e) {}
     $('size4').setAttribute('aria-pressed', n === 4); $('size5').setAttribute('aria-pressed', n === 5);
   }
-  // song shelf: a carousel of records; the one snapped to the middle is picked, plays a preview and shows its details
-  let pickSong = -1, tutDone = false;
+  // stage shelf: a carousel of records, one per music style; the one snapped to the middle is picked, previews its first song and shows its details
+  let pickSong = -1, pickMode = 0, tutDone = false;
   try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
-  try { const k = SONGS.findIndex(x => x.id === localStorage.getItem('brickslam-song')); song = SONGS[Math.max(0, k)] || song; } catch (e) {}
+  try { const k = STAGES.findIndex(x => x.id === localStorage.getItem('brickslam-stage')); stage = STAGES[Math.max(0, k)]; } catch (e) {}
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
   function centerRec(i, smooth) {
     const rack = $('rack'), rec = rack.children[i];
@@ -2193,16 +2295,17 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function pullSong(i, scroll) {
     if (scroll) centerRec(i, true);
     if (i === pickSong) return;
-    pickSong = i; song = SONGS[i];
-    try { localStorage.setItem('brickslam-song', song.id); } catch (e) {}
+    pickSong = i; stage = STAGES[i];
+    try { localStorage.setItem('brickslam-stage', stage.id); } catch (e) {}
+    if (pickMode === 1 && !endlessOpen(stage)) pickMode = 0;
     renderSongs(); showBest();
-    const sg = song;
-    sfx.load(sg).then(() => { if (song === sg && !$('shelfView').hidden) sfx.preview(sg); }).catch(() => {});
+    const st = stage, sg = st.list[0];
+    if (!sg) { if (sfx.musicMode === 'preview') sfx.music('title'); return; }
+    sfx.load(sg).then(() => { if (stage === st && !$('shelfView').hidden) sfx.preview(sg); }).catch(() => {});
   }
   function openShelf() {
     showView('shelfView'); renderSongs();
-    if (!SONGS.length) return;
-    const i = Math.max(0, SONGS.indexOf(song));
+    const i = Math.max(0, STAGES.indexOf(stage));
     centerRec(i, false); pickSong = -1; pullSong(i);
   }
   // swiping: pick whichever record is nearest the middle once the rack settles
@@ -2217,18 +2320,24 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }, 90);
   }, { passive: true });
   $('flipL').addEventListener('click', () => pullSong(Math.max(0, pickSong - 1), true));
-  $('flipR').addEventListener('click', () => pullSong(Math.min(SONGS.length - 1, pickSong + 1), true));
+  $('flipR').addEventListener('click', () => pullSong(Math.min(STAGES.length - 1, pickSong + 1), true));
+  function setMode(m) { if (m === 1 && !endlessOpen(stage)) return; pickMode = m; renderSongs(); }
+  $('modeStage').addEventListener('click', () => setMode(0));
+  $('modeEndless').addEventListener('click', () => setMode(1));
+  // a stage's sleeve: its first song's cover, or nothing yet (the record colors show through)
+  const stageArt = st => st.list.length ? (COVERS[st.list[0].id] || '') : '';
   function renderSongs() {
     const rack = $('rack');
-    if (rack.children.length !== SONGS.length) {
+    if (rack.children.length !== STAGES.length) {
       rack.textContent = ''; $('dots').textContent = '';
-      SONGS.forEach((sg, i) => {
+      STAGES.forEach((st, i) => {
         const b = document.createElement('button');
-        b.className = 'rec'; b.setAttribute('role', 'radio');
-        b.style.setProperty('--c1', sg.cover[0]); b.style.setProperty('--c2', sg.cover[1]);
+        b.className = 'rec' + (st.list.length ? '' : ' soon'); b.setAttribute('role', 'radio');
+        b.style.setProperty('--c1', st.cover[0]); b.style.setProperty('--c2', st.cover[1]);
         const disc = document.createElement('span'); disc.className = 'disc'; disc.innerHTML = '<span class="vinyl"></span>';
         const sl = document.createElement('span'); sl.className = 'sleeve';
-        if (COVERS[sg.id]) { sl.classList.add('art'); sl.innerHTML = COVERS[sg.id]; }
+        const art = stageArt(st);
+        if (art) { sl.classList.add('art'); sl.innerHTML = art; }
         const cap = document.createElement('span'); cap.className = 'cap';
         cap.append(document.createElement('b'), document.createElement('small'));
         sl.append(cap);
@@ -2238,20 +2347,31 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         $('dots').append(document.createElement('i'));
       });
     }
-    SONGS.forEach((sg, i) => {
+    STAGES.forEach((st, i) => {
       const b = rack.children[i];
-      b.setAttribute('aria-checked', i === pickSong); b.setAttribute('aria-label', sg.name[lang]);
-      b.querySelector('b').textContent = sg.name[lang];
-      b.querySelector('small').textContent = sg.bpm + ' BPM';
+      b.setAttribute('aria-checked', i === pickSong); b.setAttribute('aria-label', st.name[lang]);
+      b.querySelector('b').textContent = st.name[lang];
+      b.querySelector('small').textContent = st.list.length ? st.sub[lang] : t('soon');
       $('dots').children[i].classList.toggle('on', i === pickSong);
     });
-    $('flipL').disabled = pickSong <= 0; $('flipR').disabled = pickSong >= SONGS.length - 1;
+    $('flipL').disabled = pickSong <= 0; $('flipR').disabled = pickSong >= STAGES.length - 1;
     $('rackHint').hidden = pickSong >= 0; $('detail').hidden = pickSong < 0;
-    $('rackHint').textContent = t(SONGS.length ? 'rackHint' : 'rackEmpty');
+    $('rackHint').textContent = t('rackHint');
     if (pickSong >= 0) {
-      const sg = SONGS[pickSong], v = getBest(sg, pickSize);
-      $('dName').textContent = sg.name[lang]; $('dLv').textContent = 'Lv.' + songLv(sg, diff);
-      $('dInfo').textContent = t('songInfo', sg.bpm, mmss(sg.len), v ? v.toLocaleString() : 0);
+      const st = STAGES[pickSong], has = st.list.length > 0, open = endlessOpen(st);
+      $('dName').textContent = st.name[lang];
+      $('dLv').textContent = has ? t('nSongs', st.list.length) : '';
+      if (has) {
+        const v = getBest(st, pickSize, diff, pickMode === 1);
+        $('dInfo').textContent = st.list.map(x => x.name[lang]).join(' · ') + ' · ' + t('songBest', v ? v.toLocaleString() : 0);
+      } else $('dInfo').textContent = t('soonInfo');
+      $('modeStage').setAttribute('aria-pressed', pickMode === 0);
+      const me = $('modeEndless');
+      me.textContent = (open ? '' : '🔒 ') + t('endless'); me.disabled = !open; me.setAttribute('aria-pressed', pickMode === 1);
+      $('modeHint').textContent = pickMode === 1 ? t('endlessHint') : open ? t('goalHint', targetGoal().toLocaleString()) : t('goalHint', targetGoal().toLocaleString()) + ' ' + t('lockHint');
+      $('okBtn').hidden = !has;
+      $('diffTabs').closest('.sizepick').hidden = $('modeRow').hidden = $('modeHint').hidden = !has;
+      $('size4').closest('.sizepick').hidden = !has;
     }
     try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
     $('tutBtn').innerHTML = '';
@@ -2307,14 +2427,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // until per-song rankings exist, the ranking page lists this device's bests per song and difficulty
   function renderMine() {
     const list = $('rankList'); list.textContent = ''; list.classList.add('mine');
-    SONGS.forEach(sg => {
+    STAGES.filter(st => st.list.length).forEach(sg => {
       const li = document.createElement('li');
-      const art = document.createElement('span'); art.className = 'art'; art.innerHTML = COVERS[sg.id] || '';
+      const art = document.createElement('span'); art.className = 'art'; art.innerHTML = stageArt(sg);
       art.style.background = `linear-gradient(155deg, ${sg.cover[0]}, #160b2a 70%)`;
       const who = document.createElement('span'); who.className = 'who'; who.textContent = sg.name[lang];
+      const inf = Math.max(...[0, 1, 2, 3].map(d => getBest(sg, rankTab, d, true)));
+      if (inf) { const sm = document.createElement('small'); sm.textContent = t('endlessBest', inf.toLocaleString()); who.append(sm); }
       const bs = document.createElement('span'); bs.className = 'bests';
       t('diffs').forEach((name, d) => {
-        let v = 0; try { v = +localStorage.getItem('brickslam-r-' + sg.id + '-' + rankTab + ['-easy', '', '-hard', '-expert'][d]) || 0; } catch (e) {}
+        const v = getBest(sg, rankTab, d, false);
         const c = document.createElement('span'); c.innerHTML = `<small>${name}</small><b>${v ? v.toLocaleString() : t('noRecord')}</b>`; bs.append(c);
       });
       li.append(art, who, bs); list.append(li);
