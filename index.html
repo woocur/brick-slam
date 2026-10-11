@@ -60,6 +60,20 @@ button { touch-action: manipulation; }
   background-size: 64px 64px; animation: floor var(--beat, .6s) linear infinite; }
 @keyframes floor { to { background-position: 0 64px; } }
 body.playing .floor { height: 34vh; opacity: .7; }
+/* title screen: AI-painted backdrop (its own sun and grid replace the CSS ones), darkened under the buttons */
+.titlebg { position: fixed; inset: 0; z-index: -2; pointer-events: none; opacity: 0; transition: opacity .5s;
+  background: linear-gradient(180deg, rgba(7, 5, 15, .15) 0%, rgba(7, 5, 15, 0) 30%, rgba(7, 5, 15, .45) 60%, rgba(7, 5, 15, .7) 100%),
+    url("covers/title-bg.jpg") center 30% / cover no-repeat, var(--ground); }
+body:not(.playing):has(#titleView:not([hidden])) .titlebg { opacity: 1; }
+body:not(.playing):has(#titleView:not([hidden])) .floor { opacity: 0; }
+.titlebg ~ .home .neontitle .sun { display: none; }
+/* wide screens: show the whole painting at full height, with a blurred copy filling the sides */
+@media (min-aspect-ratio: 4/5) {
+  .titlebg { background: var(--ground); overflow: hidden; }
+  .titlebg::before { content: ""; position: absolute; inset: -40px; background: url("covers/title-bg.jpg") center / cover; filter: blur(36px) brightness(.5); }
+  .titlebg::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(7, 5, 15, .15) 0%, rgba(7, 5, 15, 0) 30%, rgba(7, 5, 15, .45) 60%, rgba(7, 5, 15, .7) 100%), url("covers/title-bg.jpg") center / auto 100% no-repeat; }
+}
 
 /* ---------- home ---------- */
 .home {
@@ -414,6 +428,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 </head>
 <body>
 
+<div class="titlebg" aria-hidden="true"></div>
 <div class="floor" aria-hidden="true"></div>
 <main class="home" id="home">
   <section class="view title" id="titleView">
