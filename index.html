@@ -367,12 +367,11 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
 /* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
 .stage.hasshow { justify-content: flex-end; }
-.showp { display: none; flex: 1; min-height: 0; padding: 0; overflow: hidden; --pc: var(--violet); }
-.showp .plabel { position: absolute; top: 9px; left: 11px; z-index: 1; }
-.nextline { position: absolute; right: 11px; bottom: 8px; z-index: 1; max-width: 60%; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.showp { display: none; position: relative; flex: 1; min-height: 0; }
+.nextline { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); max-width: 90%; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nextline b { color: var(--ink); font-weight: 600; }
 .nextline.none { display: none; }
-#stage { margin-bottom: max(14px, 2.5vh); }   /* keeps clear of the phone's gesture bar */
+#stage { margin-bottom: max(14px, 2.5vh); width: calc(100% + 24px); max-width: 680px; }   /* the board reaches nearly to the screen edges */   /* keeps clear of the phone's gesture bar */
 .show { position: absolute; inset: 0; width: 100%; height: 100%; }
 .stage.hasshow .showp { display: block; }
 .game.showon .sart { display: none; }   /* the cover already pulses in the show panel, so the song card drops its copy */
@@ -577,7 +576,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <div class="hr" id="hudR"><span class="plabel">MULTI</span><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
   </div>
   <div class="stage" id="stage">
-    <div class="panel showp" id="showP" aria-hidden="true"><span class="plabel">NOW PLAYING</span><canvas class="show" id="show"></canvas><span class="nextline" id="nextP"><span data-i18n="nextSong"></span> · <b id="nName"></b></span></div>
+    <div class="showp" id="showP" aria-hidden="true"><canvas class="show" id="show"></canvas><span class="nextline" id="nextP"><span data-i18n="nextSong"></span> · <b id="nName"></b></span></div>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
@@ -1416,7 +1415,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function layout() {
     const r = stageEl.getBoundingClientRect();
     S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12 - (song.tutorial ? 76 : 0))));   // tutorial keeps room for hints
-    M = Math.max(30, Math.round(S * 0.085));
+    M = Math.max(24, Math.round(S * 0.07));   // slimmer frame, more room for the bricks
     B = S - 2 * M;
     cell = B / N;
     const dpr = window.devicePixelRatio || 1;
@@ -1443,7 +1442,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // stage show: the cover bounces on every beat inside a ring of bars that follow the music
   function drawShow(now) {
     if (!showH) return;
-    const W = showW, H = showH - 18, cx = W / 2, cy = H / 2 + 14;   // room for the panel's label at the top
+    const W = showW, H = showH - 18, cx = W / 2, cy = H / 2;   // room for the next-song line at the bottom
     sctx.clearRect(0, 0, W, showH);
     if (H < 60) return;
     if (showId !== song.id) {
