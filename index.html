@@ -324,7 +324,7 @@ body.playing .songbg.on { opacity: .7; }
 .panel::before { top: -3px; left: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
 .panel::after { bottom: -3px; right: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
 .plabel { font-family: var(--display); font-size: 11px; letter-spacing: .14em; color: var(--pc); text-shadow: 0 0 8px var(--pc); line-height: 1; }
-.songcard { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: center; padding: 6px 10px 6px 6px; --pc: var(--violet); }
+.songcard { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: center; --pc: var(--violet); }
 .sart { flex: none; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; background: linear-gradient(155deg, var(--hot), #160b2a 70%); box-shadow: 0 0 10px -2px var(--pc); }
 .sart img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sinfo { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr auto; column-gap: 8px; row-gap: 3px; align-items: center; }
@@ -335,8 +335,10 @@ body.playing .songbg.on { opacity: .7; }
 .sinfo #sSub { grid-column: 1 / -1; }
 .lvbar { width: 100%; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .lvbar i { display: block; height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); }
-.hud { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 8px; font-variant-numeric: tabular-nums; }
-.hud .panel { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+/* one strip for the numbers: score | combo | multiplier, split by thin lines */
+.hud { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 0; padding: 7px 0; font-variant-numeric: tabular-nums; }
+.hud > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 12px; }
+.hud > div + div { border-left: 1px solid var(--line); }
 .hud b { font-family: var(--display); font-weight: 400; line-height: 1; }
 .hud small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hl { --pc: var(--glow); }
@@ -356,25 +358,10 @@ body.playing .songbg.on { opacity: .7; }
   .topbar { gap: 8px; }
   .topbar .back { padding: 7px 9px; font-size: 13px; }
   .topbar .snd { width: 34px; height: 34px; }
-  .hud { gap: 6px; }
-  .hud .panel { padding: 6px 8px; }
+  .hud > div { padding: 0 9px; }
   #score { font-size: 24px; }
   .combo, #mult { font-size: 24px; }
 }
-/* bottom dock: the four bars' charge as a segmented fever gauge, and the next song of the stage */
-.dock { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: max(14px, 2.5vh); }   /* keeps clear of the phone's gesture bar */
-.fevp { --pc: var(--fever); display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-.segs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.segs i { height: 8px; border-radius: 3px; background: var(--line); overflow: hidden; transform: skewX(-18deg); }
-.segs b { display: block; height: 100%; width: 0; background: var(--sc, var(--glow)); box-shadow: 0 0 8px var(--sc, var(--glow)); }
-.segs i.full b { animation: segfull .5s ease-in-out infinite alternate; }
-@keyframes segfull { to { filter: brightness(1.6); } }
-.nextp { --pc: var(--glow); display: flex; gap: 8px; align-items: center; min-width: 0; padding: 6px 8px 6px 6px; }
-.nextp > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.nextp b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nart { flex: none; width: 34px; height: 34px; border-radius: 6px; overflow: hidden; background: linear-gradient(155deg, var(--glow), #160b2a 70%); }
-.nart img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.nextp.none { visibility: hidden; }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
@@ -382,6 +369,10 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 .stage.hasshow { justify-content: flex-end; }
 .showp { display: none; flex: 1; min-height: 0; padding: 0; overflow: hidden; --pc: var(--violet); }
 .showp .plabel { position: absolute; top: 9px; left: 11px; z-index: 1; }
+.nextline { position: absolute; right: 11px; bottom: 8px; z-index: 1; max-width: 60%; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nextline b { color: var(--ink); font-weight: 600; }
+.nextline.none { display: none; }
+#stage { margin-bottom: max(14px, 2.5vh); }   /* keeps clear of the phone's gesture bar */
 .show { position: absolute; inset: 0; width: 100%; height: 100%; }
 .stage.hasshow .showp { display: block; }
 .game.showon .sart { display: none; }   /* the cover already pulses in the show panel, so the song card drops its copy */
@@ -574,19 +565,19 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 <div class="game" id="game" hidden>
   <div class="topbar">
     <button class="back" id="backBtn" data-i18n="quit"></button>
-    <div class="panel songcard">
+    <div class="songcard">
       <span class="sart" id="sArt" aria-hidden="true"></span>
       <div class="sinfo"><b id="lvl">Lv.1</b><small id="sSub"></small><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div><small class="stime" id="sTime"></small></div>
     </div>
     <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
   </div>
-  <div class="hud">
-    <div class="panel hl"><span class="plabel">SCORE</span><b id="score">0</b><small><span id="bestLbl" data-i18n="best"></span> <span id="best">0</span></small><div class="goalbar" id="goalBar" aria-hidden="true"><i id="goalfill"></i></div></div>
-    <div class="panel hc"><span class="plabel">COMBO</span><b class="combo" id="combo" aria-live="polite">0</b></div>
-    <div class="panel hr" id="hudR"><span class="plabel">MULTI</span><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
+  <div class="panel hud">
+    <div class="hl"><span class="plabel">SCORE</span><b id="score">0</b><small><span id="bestLbl" data-i18n="best"></span> <span id="best">0</span></small><div class="goalbar" id="goalBar" aria-hidden="true"><i id="goalfill"></i></div></div>
+    <div class="hc"><span class="plabel">COMBO</span><b class="combo" id="combo" aria-live="polite">0</b></div>
+    <div class="hr" id="hudR"><span class="plabel">MULTI</span><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
   </div>
   <div class="stage" id="stage">
-    <div class="panel showp" id="showP" aria-hidden="true"><span class="plabel">NOW PLAYING</span><canvas class="show" id="show"></canvas></div>
+    <div class="panel showp" id="showP" aria-hidden="true"><span class="plabel">NOW PLAYING</span><canvas class="show" id="show"></canvas><span class="nextline" id="nextP"><span data-i18n="nextSong"></span> · <b id="nName"></b></span></div>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
@@ -610,10 +601,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         <button class="btn alt" id="menuBtn" data-i18n="home"></button>
       </div>
     </div>
-  </div>
-  <div class="dock">
-    <div class="panel fevp"><span class="plabel">FEVER</span><div class="segs" id="segs" aria-hidden="true"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div></div>
-    <div class="panel nextp" id="nextP"><span class="nart" id="nArt" aria-hidden="true"></span><div><span class="plabel" data-i18n="nextSong"></span><b id="nName"></b></div></div>
   </div>
   <p class="hint"><span class="keys"><span data-i18n="keyboard"></span> <kbd>←↑↓→</kbd> <kbd>F</kbd></span></p>
 </div>
@@ -1562,19 +1549,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('goalBar').hidden = !goal;
     if (goal) $('goalfill').style.width = Math.min(1, score / targetFor()) * 100 + '%';
   }
-  // fever gauge: each segment is one wall bar's charge in its color; during Fever all four show the time left
-  const segEls = [...document.querySelectorAll('#segs i')];
-  function hudFever() {
-    const f = fever(), left = f ? (feverUntil - sp) / feverTotal : 0;
-    segEls.forEach((el, k) => {
-      const bar = bars[k], b = el.firstChild;
-      const v = f ? left : Math.min(1, bar.charge / CFG[N].need);
-      b.style.width = v * 100 + '%';
-      b.style.setProperty('--sc', f ? 'var(--fever)' : WALL_COL[bar.c][1]);
-      el.classList.toggle('full', !f && bar.full);
-    });
-  }
-
   function pickType(bar) {
     if (forceType) { const k = forceType; forceType = null; return k; }
     const k = kinds, has = x => x in k && bar >= k[x];
@@ -2240,7 +2214,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         el.textContent = cShow ? '×' + cShow : '0';
         if (cShow) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
       }
-      hudFever();
     }
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.94; p.vy *= 0.94; p.life -= dt * 1.8;
@@ -2305,7 +2278,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     $('sArt').innerHTML = tut ? '' : (COVERS[song.id] || '');
     const nx = run && !tut ? runSong(run.i + 1) : null;
     $('nextP').classList.toggle('none', !nx);
-    if (nx) { $('nArt').innerHTML = COVERS[nx.id] || ''; $('nName').textContent = nx.name[lang]; }
+    if (nx) $('nName').textContent = nx.name[lang];
     shownSec = -1;
     const bgImg = !tut && /src="([^"]+)"/.exec(COVERS[song.id] || '');
     $('songBg').classList.toggle('on', !!bgImg); if (bgImg) $('songBg').style.backgroundImage = `url("${bgImg[1]}")`;
