@@ -380,8 +380,11 @@ canvas { display: block; touch-action: none; max-width: 100%; }
 .lane { display: block; flex: none; }
 /* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
 .stage.hasshow { justify-content: flex-end; }
-.show { display: none; flex: 1; min-height: 0; width: 100%; }
-.stage.hasshow .show { display: block; }
+.showp { display: none; flex: 1; min-height: 0; padding: 0; overflow: hidden; --pc: var(--violet); }
+.showp .plabel { position: absolute; top: 9px; left: 11px; z-index: 1; }
+.show { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage.hasshow .showp { display: block; }
+.game.showon .sart { display: none; }   /* the cover already pulses in the show panel, so the song card drops its copy */
 .tutbox {
   position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
   width: min(92%, 420px); box-sizing: border-box; padding: 10px 14px; border-radius: 12px;
@@ -583,7 +586,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <div class="panel hr" id="hudR"><span class="plabel">MULTI</span><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
   </div>
   <div class="stage" id="stage">
-    <canvas class="show" id="show" aria-hidden="true"></canvas>
+    <div class="panel showp" id="showP" aria-hidden="true"><span class="plabel">NOW PLAYING</span><canvas class="show" id="show"></canvas></div>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
@@ -1438,20 +1441,22 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // tall screens: the play area sits low and the song's show fills the space above it (not in the tutorial)
     const spare = r.height - S - LH - 24;
-    stageEl.classList.toggle('hasshow', spare >= 96 && !song.tutorial);
-    if (stageEl.classList.contains('hasshow')) {
+    const on = spare >= 96 && !song.tutorial;
+    stageEl.classList.toggle('hasshow', on); $('game').classList.toggle('showon', on);
+    if (on) {
+      $('showP').style.width = S + 'px';   // the show panel lines up with the board below it
       showW = show.clientWidth; showH = show.clientHeight;
       show.width = showW * dpr; show.height = showH * dpr; sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     } else showH = 0;
     // tutorial hints sit just above the note lane
     const tb = $('tutBox').style, ly = lane.offsetTop;
-    tb.top = 'auto'; tb.bottom = (stage.clientHeight - ly + 6) + 'px';
+    tb.top = 'auto'; tb.bottom = (stageEl.clientHeight - ly + 6) + 'px';
   }
 
   // stage show: the cover bounces on every beat inside a ring of bars that follow the music
   function drawShow(now) {
     if (!showH) return;
-    const W = showW, H = showH - 8, cx = W / 2, cy = H / 2 + 4;   // the combo now lives in its HUD panel, so the show takes the whole space
+    const W = showW, H = showH - 18, cx = W / 2, cy = H / 2 + 14;   // room for the panel's label at the top
     sctx.clearRect(0, 0, W, showH);
     if (H < 60) return;
     if (showId !== song.id) {
