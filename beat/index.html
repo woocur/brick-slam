@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07050f">
-<meta name="description" content="Brick Slam Beat · 브릭 슬램 비트. Push bricks to the beat and slam them into the walls. A rhythm puzzle game.">
+<meta name="description" content="Brick Slam Beat · 브릭 슬램 비트. Push bricks into the matching walls while the music plays. A neon puzzle game.">
 <meta property="og:title" content="Brick Slam Beat · 브릭 슬램 비트">
-<meta property="og:description" content="비트에 맞춰 벽돌을 밀어서 벽에 쾅! 음악에 맞춰 즐기는 리듬 퍼즐.">
+<meta property="og:description" content="벽돌을 같은 색 벽으로 밀어서 쾅! 음악과 함께 즐기는 네온 퍼즐.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://woocur.github.io/brick-slam/beat/">
 <meta property="og:image" content="https://woocur.github.io/brick-slam/beat/og-beat.jpg">
@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2307050f'/%3E%3Crect x='7.5' y='7.5' width='17' height='17' rx='3' fill='none' stroke='%23ff3fa4' stroke-width='3'/%3E%3Crect x='28' y='4' width='3' height='24' rx='1.5' fill='%232ef2ff'/%3E%3C/svg%3E">
-<title>Brick Slam Beat</title>
+<title>Brick Slam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Monoton&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
@@ -309,51 +309,72 @@ body.playing .songbg.on { opacity: .7; }
 .titlerow { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
 .titlerow .langsw { margin-top: 0; }
 .titlerow .snd { width: 44px; height: 44px; border-radius: 999px; background: var(--board); }
-/* game HUD: song + progress on top, then score / combo / multiplier and board fill in big type */
-.songhead { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.songhead b { font-family: var(--display); font-weight: 400; font-size: 16px; color: var(--glow); text-shadow: 0 0 10px rgba(46, 242, 255, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* game HUD: neon panels (song card on top; score / combo / multiplier; fever gauge and next song at the bottom).
+   Each panel is its own box, so any of them can later be swapped for a drawn image. */
+.panel {
+  --pc: var(--glow);
+  position: relative; box-sizing: border-box; border-radius: 12px; padding: 7px 10px;
+  background: linear-gradient(180deg, rgba(20, 14, 44, .88), rgba(9, 6, 22, .88));
+  border: 1.5px solid color-mix(in srgb, var(--pc) 70%, transparent);
+  box-shadow: 0 0 14px -3px color-mix(in srgb, var(--pc) 70%, transparent), inset 0 0 16px -8px var(--pc);
+}
+.panel::before, .panel::after {   /* little corner ticks, like a game frame */
+  content: ""; position: absolute; width: 8px; height: 8px; border: 2px solid var(--pc); opacity: .9; pointer-events: none;
+}
+.panel::before { top: -3px; left: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
+.panel::after { bottom: -3px; right: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
+.plabel { font-family: var(--display); font-size: 11px; letter-spacing: .14em; color: var(--pc); text-shadow: 0 0 8px var(--pc); line-height: 1; }
+.songcard { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: center; --pc: var(--violet); }
+.sart { flex: none; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; background: linear-gradient(155deg, var(--hot), #160b2a 70%); box-shadow: 0 0 10px -2px var(--pc); }
+.sart img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sinfo { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr auto; column-gap: 8px; row-gap: 3px; align-items: center; }
+.sinfo b { grid-column: 1 / -1; font-family: var(--display); font-weight: 400; font-size: 15px; line-height: 1.1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sinfo small { font-size: 11px; color: var(--glow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sinfo .lvbar { grid-column: 1; }
+.sinfo .stime { grid-column: 2; grid-row: 3; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sinfo #sSub { grid-column: 1 / -1; }
 .lvbar { width: 100%; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.lvbar i { display: block; height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); transition: width .25s; }
-.hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.lvbar i { display: block; height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--violet), var(--glow)); box-shadow: 0 0 8px var(--glow); }
+/* one strip for the numbers: score | combo | multiplier, split by thin lines */
+.hud { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 0; padding: 7px 0; font-variant-numeric: tabular-nums; }
+.hud > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 12px; }
+.hud > div + div { border-left: 1px solid var(--line); }
 .hud b { font-family: var(--display); font-weight: 400; line-height: 1; }
-.hud small { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.hl, .hr { display: flex; flex-direction: column; }
-.hr { align-items: flex-end; grid-column: 3; }
-#score { font-size: 34px; text-shadow: 0 0 12px rgba(244, 241, 255, .35); }
+.hud small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hl { --pc: var(--glow); }
+.hc { --pc: var(--hot); align-items: center; justify-content: center; }
+.hr { --pc: var(--fever); align-items: flex-end; text-align: right; }
+#score { font-size: 28px; text-shadow: 0 0 12px rgba(244, 241, 255, .35); }
+.goalbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 1px; }
+.goalbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--glow), #fff); box-shadow: 0 0 6px var(--glow); }
+.combo { font-size: 30px; color: var(--hot); text-shadow: 0 0 14px rgba(255, 63, 164, .8); opacity: .35; }
+.combo.on { opacity: 1; }
+.combo.pop { animation: cpop .18s ease-out; }
 #mult { font-size: 26px; color: var(--muted); }
 #mult.on { color: var(--fever); text-shadow: 0 0 12px var(--fever); }
 #count.warn { color: var(--danger); font-weight: 600; }
-.combo { display: flex; flex-direction: column; align-items: center; min-width: 90px; opacity: 0; transform: scale(.8); transition: opacity .2s, transform .15s; }
-.combo.on { opacity: 1; transform: none; }
-.combo b { font-size: 34px; color: var(--fever); text-shadow: 0 0 14px rgba(255, 216, 77, .8); }
-.combo span { font-family: var(--display); font-size: 11px; letter-spacing: .25em; color: var(--fever); opacity: .8; }
-.combo.pop b { animation: cpop .18s ease-out; }
-/* on tall screens the combo floats big in the free space above the note lane */
-.combo.float { position: absolute; left: 50%; z-index: 1; pointer-events: none; transform: translate(-50%, -50%) scale(.8); }
-.combo.float.on { transform: translate(-50%, -50%); }
-.combo.float b { font-size: clamp(48px, 16vw, 84px); }
-.combo.float span { font-size: 14px; }
-.combo.float.low b { font-size: clamp(36px, 11vw, 56px); }
-.combo.float.low span { font-size: 12px; }
-.game:has(#overOv:not([hidden])) .combo.float { visibility: hidden; }
-@keyframes cpop { from { transform: scale(1.25); } }
+@keyframes cpop { from { transform: scale(1.3); } }
 @media (max-width: 430px) {
   .topbar { gap: 8px; }
   .topbar .back { padding: 7px 9px; font-size: 13px; }
   .topbar .snd { width: 34px; height: 34px; }
-  #score, .combo b { font-size: 28px; }
-  #mult { font-size: 22px; }
+  .hud > div { padding: 0 9px; }
+  #score { font-size: 24px; }
+  .combo, #mult { font-size: 24px; }
 }
-.feverbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; opacity: 0; transition: opacity .3s; }
-.game.fever .feverbar { opacity: 1; }
-.feverbar i { display: block; height: 100%; width: 0; background: var(--fever); box-shadow: 0 0 8px var(--fever); }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
-.lane { display: block; flex: none; }
+.lane { display: none; }
 /* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
-.stage.hasshow { justify-content: flex-end; padding-bottom: max(40px, 6vh); box-sizing: border-box; }   /* keep the board clear of the phone's gesture bar */
-.show { display: none; flex: 1; min-height: 0; width: 100%; }
-.stage.hasshow .show { display: block; }
+.stage.hasshow { justify-content: flex-end; }
+.showp { display: none; position: relative; flex: 1; min-height: 0; }
+.nextline { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); max-width: 90%; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nextline b { color: var(--ink); font-weight: 600; }
+.nextline.none { display: none; }
+#stage { margin-bottom: max(14px, 2.5vh); width: calc(100% + 24px); max-width: 680px; }   /* the board reaches nearly to the screen edges */   /* keeps clear of the phone's gesture bar */
+.show { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage.hasshow .showp { display: block; }
+.game.showon .sart { display: none; }   /* the cover already pulses in the show panel, so the song card drops its copy */
 .tutbox {
   position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
   width: min(92%, 420px); box-sizing: border-box; padding: 10px 14px; border-radius: 12px;
@@ -475,7 +496,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <ol>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><defs><marker id="ha" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#fff"/></marker></defs><rect x="19" y="19" width="58" height="58" rx="6" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="20" y="9" width="56" height="5" rx="2.5" fill="#2ef2ff"/><rect x="82" y="20" width="5" height="56" rx="2.5" fill="#ff3fa4"/><rect x="20" y="82" width="56" height="5" rx="2.5" fill="#4dff7c"/><rect x="9" y="20" width="5" height="56" rx="2.5" fill="#ff8f3a"/><rect x="24" y="40" width="16" height="16" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><path d="M44 48H72" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4" marker-end="url(#ha)"/><g stroke="#ff3fa4" stroke-width="2" stroke-linecap="round"><path d="M90 36l4-4M90 60l4 4M91 48h4"/></g></svg><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><defs><marker id="ha" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#fff"/></marker></defs><rect x="19" y="19" width="58" height="58" rx="6" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="20" y="9" width="56" height="5" rx="2.5" fill="#2ef2ff"/><rect x="82" y="20" width="5" height="56" rx="2.5" fill="#ff3fa4"/><rect x="20" y="82" width="56" height="5" rx="2.5" fill="#4dff7c"/><rect x="9" y="20" width="5" height="56" rx="2.5" fill="#ff8f3a"/><rect x="58" y="40" width="16" height="16" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><path transform="rotate(0 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(90 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(180 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(270 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path d="M38 42l8 8M46 42l-8 8" stroke="#ff4d5e" stroke-width="2.6" stroke-linecap="round"/></svg><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
-      <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="36" y="22" width="24" height="24" rx="5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.5"/><rect x="27" y="13" width="42" height="42" rx="10" fill="none" stroke="#2ef2ff" stroke-width="2" stroke-dasharray="4 3"/><g stroke="#2ef2ff" stroke-width="2" stroke-linecap="round"><path d="M22 34h5M69 34h5M48 8v5"/></g><rect x="8" y="68" width="80" height="14" rx="7" fill="#1c1236"/><circle cx="18" cy="75" r="6" fill="none" stroke="#2ef2ff" stroke-width="2"/><circle cx="40" cy="75" r="2.5" fill="#a99fd0"/><circle cx="58" cy="75" r="2.5" fill="#a99fd0"/><circle cx="76" cy="75" r="2.5" fill="#a99fd0"/></svg><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
+      <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="84" y="10" width="7" height="76" rx="3.5" fill="#ff3fa4"/><rect x="50" y="38" width="20" height="20" rx="4" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.5"/><rect x="28" y="38" width="16" height="20" rx="4" fill="none" stroke="#ff3fa4" stroke-width="2" opacity=".55"/><rect x="10" y="38" width="12" height="20" rx="4" fill="none" stroke="#ff3fa4" stroke-width="2" opacity=".3"/><text x="48" y="28" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="16" fill="#2ef2ff">×3</text></svg><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="42" y="8" width="12" height="80" rx="6" fill="#ffd84d" style="filter:drop-shadow(0 0 6px #ffd84d)"/><circle cx="48" cy="48" r="11" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="48" cy="48" r="19" fill="none" stroke="#fff" stroke-width="1.5" opacity=".45"/><text x="72" y="30" fill="#ffd84d" font-size="17" font-weight="700" font-family="inherit">×2</text></svg><div><b data-i18n="how4t"></b><span data-i18n="how4"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="6" y="14" width="84" height="7" rx="3.5" fill="#1c1236"/><rect x="6" y="14" width="84" height="7" rx="3.5" fill="url(#hg)"/><defs><linearGradient id="hg"><stop offset="0" stop-color="#8f5bff"/><stop offset="1" stop-color="#2ef2ff"/></linearGradient></defs><rect x="4" y="43" width="40" height="40" rx="5" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="19" y="58" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="52" y="43" width="40" height="40" rx="5" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="55" y="46" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="67" y="46" width="10" height="10" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><rect x="79" y="46" width="10" height="10" rx="3.5" fill="#08361a" stroke="#4dff7c" stroke-width="2.2"/><rect x="55" y="58" width="10" height="10" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><rect x="67" y="58" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="79" y="58" width="10" height="10" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><rect x="55" y="70" width="10" height="10" rx="3.5" fill="#08361a" stroke="#4dff7c" stroke-width="2.2"/><rect x="67" y="70" width="10" height="10" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><rect x="79" y="70" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><path d="M16 33l4 4 8-8" fill="none" stroke="#4dff7c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M66 29l8 8M74 29l-8 8" stroke="#ff4d5e" stroke-width="3" stroke-linecap="round"/></svg><div><b data-i18n="how5t"></b><span data-i18n="how5"></span></div></li>
     </ol>
@@ -543,17 +564,19 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 <div class="game" id="game" hidden>
   <div class="topbar">
     <button class="back" id="backBtn" data-i18n="quit"></button>
-    <div class="songhead"><b id="lvl">Lv.1</b><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div></div>
+    <div class="songcard">
+      <span class="sart" id="sArt" aria-hidden="true"></span>
+      <div class="sinfo"><b id="lvl">Lv.1</b><small id="sSub"></small><div class="lvbar" aria-hidden="true"><i id="lvfill"></i></div><small class="stime" id="sTime"></small></div>
+    </div>
     <button class="snd" id="sndGame" aria-pressed="true" data-i18n-aria="sound"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg></button>
   </div>
-  <div class="hud">
-    <div class="hl"><b id="score">0</b><small><span id="bestLbl" data-i18n="best"></span> <span id="best">0</span></small></div>
-    <div class="combo" id="combo" aria-live="polite"></div>
-    <div class="hr" id="hudR"><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
+  <div class="panel hud">
+    <div class="hl"><span class="plabel">SCORE</span><b id="score">0</b><small><span id="bestLbl" data-i18n="best"></span> <span id="best">0</span></small><div class="goalbar" id="goalBar" aria-hidden="true"><i id="goalfill"></i></div></div>
+    <div class="hc"><span class="plabel">COMBO</span><b class="combo" id="combo" aria-live="polite">0</b></div>
+    <div class="hr" id="hudR"><span class="plabel">MULTI</span><b id="mult">×1</b><small><span data-i18n="bricks"></span> <span id="count">0/16</span></small></div>
   </div>
-  <div class="feverbar" aria-hidden="true"><i id="feverfill"></i></div>
   <div class="stage" id="stage">
-    <canvas class="show" id="show" aria-hidden="true"></canvas>
+    <div class="showp" id="showP" aria-hidden="true"><canvas class="show" id="show"></canvas><span class="nextline" id="nextP"><span data-i18n="nextSong"></span> · <b id="nName"></b></span></div>
     <canvas class="lane" id="lane" aria-hidden="true"></canvas>
     <canvas id="cv" data-i18n-aria="boardAria"></canvas>
     <div class="tutbox" id="tutBox" role="status" hidden></div>
@@ -587,7 +610,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const cv = $('cv'), ctx = cv.getContext('2d'), stageEl = $('stage');
   const show = $('show'), sctx = show.getContext('2d'), spec = new Uint8Array(128);
   let showW = 0, showH = 0, showImg = null, showId = '';
-  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane above the board
+  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 0;   // the note lane is gone with the rhythm rules
   const css = getComputedStyle(document.documentElement);
   const C = {};
   ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
@@ -597,8 +620,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const CFG = { 4: { cap: 16, need: 6 }, 5: { cap: 25, need: 8 } };
   const SLIDE_SPEED = 14;      // cells per second (slides that stop against another brick)
   const FEVER_BEATS = 16, FEVER_EXTEND_BEATS = 8;
-  // timing windows around each beat, in seconds; points multiplier per judgement (PERFECT, GREAT, MISS)
-  const WIN_PERFECT = 0.055, WIN_GREAT = 0.11, JUDGE_MUL = [2, 1.5, 1];
+  // points multiplier per judgement (kept flat now that there is no timing judgement)
+  const JUDGE_MUL = [1, 1, 1];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- songs: each one is a stage that ends when the music ends ----------
@@ -651,6 +674,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         '000000000000000010000010100010101000100010001100101000001010100010100000100011001000100010001010100010001000101010001000100010100000101010100100101000101000101010001010110000101010100010100100101010001000101010101000101010001000101010100010101010001010100010101000000010011000001110101100110000101110100010000101101010101000010110001101001010011100101010001010001111001100010001100010111000001010000101010010110000101010010000000000',
         '000000000000000010001010100011101000110010101100101010001010110010101000100011101010100010101010100010101100101010001010110010101000101010101100101001101010101011001010110010101010101010101100101110001010101010101010101010101010101010101010101010101010101010101010100010011000011110101110111000101110100110010101101010111001010111001101001010111100111010001011011111001100011001101010111100001110000101110010111000101110010000000000'],
       kinds: { gold: 4, stone: 18 } },
+    { id: 'racing', name: { ko: '레이싱 비트', en: 'Racing Beat' }, bpm: 157, stars: 2, style: 'house',
+      cover: ['#4ab0ff', '#ffd84d'], previewBar: 49,
+      src: 'songs/racing-beat.mp3', beats: [0.443,0.826,1.208,1.591,1.973,2.356,2.739,3.122,3.505,3.888,4.271,4.655,5.038,5.422,5.805,6.188,6.571,6.953,7.336,7.718,8.101,8.483,8.866,9.248,9.631,10.013,10.396,10.779,11.162,11.545,11.928,12.311,12.694,13.077,13.459,13.842,14.225,14.608,14.991,15.373,15.755,16.138,16.520,16.902,17.285,17.667,18.049,18.432,18.814,19.197,19.579,19.961,20.344,20.726,21.107,21.489,21.871,22.253,22.635,23.017,23.399,23.781,24.164,24.546,24.929,25.311,25.693,26.076,26.459,26.841,27.224,27.606,27.989,28.372,28.754,29.137,29.519,29.901,30.284,30.666,31.048,31.431,31.813,32.194,32.576,32.959,33.341,33.723,34.105,34.487,34.870,35.252,35.634,36.016,36.398,36.780,37.162,37.544,37.926,38.308,38.690,39.072,39.455,39.837,40.219,40.601,40.983,41.365,41.747,42.129,42.511,42.893,43.275,43.657,44.040,44.422,44.803,45.185,45.567,45.949,46.331,46.713,47.095,47.477,47.859,48.241,48.623,49.005,49.386,49.768,50.150,50.532,50.914,51.297,51.679,52.061,52.443,52.824,53.206,53.588,53.970,54.353,54.735,55.117,55.499,55.880,56.262,56.644,57.026,57.408,57.790,58.172,58.554,58.936,59.318,59.699,60.081,60.463,60.844,61.226,61.608,61.990,62.373,62.754,63.136,63.518,63.900,64.282,64.664,65.046,65.428,65.811,66.193,66.575,66.957,67.339,67.721,68.103,68.485,68.867,69.249,69.631,70.013,70.395,70.778,71.160,71.542,71.923,72.305,72.687,73.069,73.452,73.834,74.216,74.598,74.981,75.362,75.744,76.126,76.508,76.890,77.272,77.654,78.036,78.419,78.801,79.183,79.565,79.947,80.329,80.711,81.093,81.475,81.857,82.239,82.621,83.003,83.385,83.767,84.149,84.530,84.912,85.294,85.676,86.059,86.441,86.823,87.205,87.587,87.970,88.352,88.734,89.116,89.498,89.880,90.263,90.645,91.027,91.410,91.792,92.174,92.556,92.938,93.320,93.702,94.084,94.466,94.848,95.230,95.612,95.995,96.377,96.758,97.140,97.522,97.904,98.286,98.669,99.051,99.433,99.815,100.197,100.580,100.962,101.344,101.726,102.108,102.489,102.872,103.254,103.636,104.018,104.400,104.782,105.164,105.546,105.928,106.310,106.692,107.074,107.457,107.839,108.221,108.604,108.986,109.368,109.750,110.132,110.513,110.895,111.278,111.660,112.042,112.425,112.807,113.189,113.571,113.953,114.335,114.717,115.099,115.481,115.863,116.245,116.627,117.010,117.391,117.773,118.155,118.537,118.919,119.301,119.683,120.065,120.447,120.829,121.212,121.594,121.976,122.358,122.740,123.122,123.504,123.886,124.268,124.650,125.031,125.413,125.795,126.176,126.560,126.945],
+      parts: { intro: { prog: [[39, [58, 63, 67]]] }, a: { prog: [[39, [58, 63, 67]]] }, brk: { prog: [[39, [58, 63, 67]]] }, c: { prog: [[39, [58, 63, 67]]] } },
+      map: [[8, 'h', 0, 'intro'], [15, 'ht', 1, 'a'], [18, 'tq', 2, 'c'], [8, 'hr', 0, 'brk'], [8, 'tq', 2, 'c'], [8, 'ht', 1, 'a'], [8, 'tq', 2, 'c'], [8, 'tt', 1, 'a']],
+      charts: [
+        '100010001000001000001010100000101000001010010000100000100100000110000100000010101010000010001000001010000010001010000010100000101000100000101000100001001010000000001010101000001000100000100010100010101010000010100010100000101010001010001000101010001000100011010000100000101010010011000000100010101010000010001010100000101010001010100000000000000000101000000000100100000000000010001000000000001010000010101000100000101010000110100000001010101000100010010010100000101000100010000010100010001000010010000010100000011001000010000010101000101000100000101010100010001011000000100010100100101000000110100000100100001000100010000001000000111000001010000010',
+        '100010001000001000001010100000101000001010010000100000100100000110000100001010101010000010001010001010000010101010000010110000101000100000101010100001001110000000001010101001001000100000101010100011101010100010101010101000101010101010101000101110001000101011011000101000101010011011001000100011101010100010001011101000101010001110100000000000000000101000000000100100000000000010001000000000001010100010101100101000101010100110101000101010101000110011010010100000101000101010000010100010101000010010001010100000011001000110100010101000111000101000101011100010101011100000101010100100111000100110101000100101001001100010001001100000111010001010001010',
+        '101010001010001010001010101000101000001110010001100000111100000111000100101010101010001010001110001010011010101010001010110000111000101010101010100001101110010010001010101001101000101001101010100111101010101011101010101000111110101010101010111110001010101011011010111000101010011111001100100111101011100010101011101010101010011110100010000000000100101000000000100100010000000010001001000000001010101011101100111000101010101110110001101010111000111011010011100010101010101010001010101010101010010010101010100010011001100110100011101010111000111010101011100011101111100010101010100110111010100110101010100101011001101010011001101000111110001010011010'],
+      kinds: { gold: 8, stone: 23 } },
     // recorded songs (made with Suno): src = the audio file, beats = its measured beat times (see tools/beatgrid.py),
     // charts = easy/normal/hard drawn from the song's own hits, 8 digits per bar (see tools/autochart.py); map then only sets parts
     { id: 'parfait', name: { ko: '네온 파르페', en: 'Neon Parfait' }, bpm: 129, stars: 2, style: 'house',
@@ -719,6 +752,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     groove: '<img src="covers/groove.jpg" alt="" decoding="async">',
     // a cryptid peeking from a dark forest under a full moon, only its eyes glowing
     cryptid: '<img src="covers/cryptid.jpg" alt="" decoding="async">',
+    // a sports car drifting through a neon city at night
+    racing: '<img src="covers/racing.jpg" alt="" decoding="async">',
   };
   // stages: one per music style; its songs play back to back (board and score carry over) until the target score.
   // clearing a stage on Expert unlocks its endless run. A style with no songs yet shows as "coming soon".
@@ -726,7 +761,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     { id: 'synth', name: { ko: '신스웨이브', en: 'Synthwave' }, sub: { ko: '80년대 네온 신스', en: '80s neon synths' }, cover: ['#ff3fd8', '#2ef2ff'], songs: ['arcade', 'runner'] },
     { id: 'house', name: { ko: '하우스', en: 'House' }, sub: { ko: '펑키 하우스 · 디스코', en: 'funky house & disco' }, cover: ['#ff8f3a', '#ff3fa4'], songs: ['groove', 'parfait'] },
     { id: 'dark', name: { ko: '다크 일렉트로', en: 'Dark Electro' }, sub: { ko: '어둡고 묵직한 전자음', en: 'dark, heavy electronics' }, cover: ['#4dff7c', '#8f5bff'], songs: ['dbeat', 'cryptid'] },
-    { id: 'euro', name: { ko: '유로비트', en: 'Eurobeat' }, sub: { ko: '빠르고 신나는 유로비트', en: 'fast and bright' }, cover: ['#4ab0ff', '#ffd84d'], songs: [] },
+    { id: 'euro', name: { ko: '유로비트', en: 'Eurobeat' }, sub: { ko: '빠르고 신나는 유로비트', en: 'fast and bright' }, cover: ['#4ab0ff', '#ffd84d'], songs: ['racing'] },
     { id: 'metal', name: { ko: '하드록 · 메탈', en: 'Hard Rock & Metal' }, sub: { ko: '기타가 터지는 록', en: 'loud guitars' }, cover: ['#ff4d5e', '#ffd84d'], songs: [] }
   ];
   STAGES.forEach(st => { st.list = st.songs.map(id => SONGS.find(s => s.id === id)).filter(Boolean); });
@@ -807,6 +842,36 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const nColors = () => song.tutorial || diff >= 3 ? 4 : diff === 2 ? 2 : 1;
   const wallColors = () => nColors() === 4 ? [0, 1, 2, 3] : nColors() === 2 ? [0, 1, 0, 1] : [0, 0, 0, 0];
   const fits = (b, d) => (b.type || 'n') !== 'n' || b.c == null || b.c === bars[d].c || fever();
+  // which way to push a brick: a wall it may hit (its color, or any in Fever / for plain bricks), the open path first, then the shortest
+  function aimDir(b) {
+    let best = -1, bestScore = -1e9;
+    for (let d = 0; d < 4; d++) {
+      if (!fits(b, d)) continue;
+      const { dx, dy } = DIRS[d];
+      let x = b.x, y = b.y, n = 0;
+      while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; n++; }
+      const open = !(x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N);
+      const sc = (open ? 100 : 0) - n;
+      if (sc > bestScore) { bestScore = sc; best = d; }
+    }
+    return best;
+  }
+  // arrow on each brick toward the bar it should be thrown at, in that bar's color, like a flick note
+  function drawAim(b, bx, by, now) {
+    const d = aimDir(b);
+    if (d < 0) return;
+    const { dx, dy } = DIRS[d], cx = M + (bx + 0.5) * cell, cy = M + (by + 0.5) * cell;
+    const wob = reduceMotion ? 0 : Math.sin(now / 180) * cell * 0.03;
+    const off = cell * 0.24 + wob, w = cell * 0.13, col = fever() ? (C.fever || '#ffd84d') : WALL_COL[bars[d].c][1];
+    ctx.save();
+    ctx.translate(cx + dx * off, cy + dy * off); ctx.rotate(Math.atan2(dy, dx));
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(8, 4, 20, .85)'; ctx.lineWidth = Math.max(5, cell * 0.075);
+    ctx.beginPath(); ctx.moveTo(-w * 0.7, -w); ctx.lineTo(w * 0.3, 0); ctx.lineTo(-w * 0.7, w); ctx.stroke();
+    ctx.strokeStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.lineWidth = Math.max(3, cell * 0.045);
+    ctx.beginPath(); ctx.moveTo(-w * 0.7, -w); ctx.lineTo(w * 0.3, 0); ctx.lineTo(-w * 0.7, w); ctx.stroke();
+    ctx.restore();
+  }
   let barRotAt = -1e9;   // when the bars last turned, for the swing animation
   const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   let beatGlow = 0;   // 0..1, spikes on every beat; bricks and the floor of the board pulse with it
@@ -820,7 +885,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       howTitle: '하는 법',
       how1t: '벽으로 던지기', how1: '벽돌을 바 쪽으로 밀면 쾅! 사라져요. 어려움부터는 같은 색 바에 맞혀야 해요.',
       how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 어려움은 2색, 아주 어려움은 4색이고 바가 한 칸씩 돌아요.',
-      how3t: '박자에 맞춰', how3: '줄어드는 링이 벽돌에 닿을 때 밀면 PERFECT! 콤보가 쌓여요.',
+      how3t: '콤보', how3: '같은 색 바에 연달아 맞히면 콤보가 쌓여 점수가 올라요.',
       how4t: '피버', how4: '빛나는 바를 누르면 점수 2배. 피버 중엔 아무 벽이나 OK!',
       how5t: '목표 점수', how5: '곡이 이어서 나와요. 목표 점수를 내면 클리어, 판이 꽉 차면 실패예요.',
       howKinds: '어려운 곡엔 특수 벽돌도 나와요',
@@ -837,22 +902,22 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       goalHint: n => '곡이 이어서 나와요. ' + n + '점을 내면 클리어!', lockHint: '아주 어려움을 깨면 무제한이 열려요.',
       endlessHint: '곡이 끝없이 이어지고 갈수록 벽돌이 많아져요. 판이 찰 때까지 버티세요!',
       toGo: n => '클리어까지 ' + n + '점', songN: n => n + '번째 곡', songsPlayed: '곡', endlessOver: '무제한 끝!',
-      unlockNote: '무제한 모드가 열렸어요!', goal: '목표', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
+      unlockNote: '무제한 모드가 열렸어요!', goal: '목표', nextSong: '다음 곡', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
         '네 바는 저마다 색이 있어요. 벽돌을 <b>같은 색 바로 던지세요!</b> 같은 색 바에 맞아야 깨져요.',
         '이번엔 일부러 <b>다른 색 바로</b> 던져 보세요.',
         '색이 다르면 벽돌은 바 앞에 멈추고 <b>아주 어려움에서는 네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
-        '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
+        '같은 색 바에 <b>연달아 맞히면 콤보</b>가 쌓여 점수가 올라요. 세 번 연달아 깨 보세요.',
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
-        '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 박자에 맞춰 계속 밀어 보세요.',
-        '준비 끝! 스테이지에서는 벽돌이 음악에 맞춰 떨어지고 곡이 이어서 나와요. <b>판이 꽉 차기 전에</b> 목표 점수를 내면 클리어예요.'
+        '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 계속 밀어 보세요.',
+        '준비 끝! 스테이지에서는 곡이 이어서 나오고 곡이 바뀔 때마다 벽돌이 더 빨리 나와요. <b>판이 꽉 차기 전에</b> 목표 점수를 내면 클리어예요.'
       ],
       wrongWall: '색이 달라요', tutWrong: '색이 달라서 바가 돌았어요. 같은 색 바를 다시 찾아봐요!', tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
       clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
-      hint: '박자에 맞춰 벽돌을 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
+      hint: '벽돌을 같은 색 바로 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
       rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
       privacy: '개인정보처리방침',
       myRecords: '내 기록', rankProto: '친구들과 겨루는 곡별 랭킹은 준비 중이에요. 지금은 이 기기에 남은 내 최고 기록을 보여 드려요.', noRecord: '–',
@@ -870,7 +935,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       howTitle: 'How to play',
       how1t: 'Slam it', how1: 'Push a brick into a bar. Slam! From Hard on, it must be the bar of its color.',
       how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. Hard has 2 colors; Expert has 4 and the bars turn one place.',
-      how3t: 'On the beat', how3: 'Push when the shrinking ring touches the brick for a PERFECT and a combo.',
+      how3t: 'Combo', how3: 'Hit matching bars in a row to build a combo and score more.',
       how4t: 'Fever', how4: 'Tap a glowing bar for 2× points. Any wall works during Fever!',
       how5t: 'Target score', how5: 'Songs play back to back. Reach the target score to clear; a full board means fail.',
       howKinds: 'Harder songs add special bricks',
@@ -887,22 +952,22 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       goalHint: n => 'Songs play back to back. Score ' + n + ' to clear!', lockHint: 'Clear it on Expert to open Endless.',
       endlessHint: 'Songs never stop and more bricks come each song. Last as long as you can!',
       toGo: n => n + ' to clear', songN: n => 'Song ' + n, songsPlayed: 'Songs', endlessOver: 'Endless over!',
-      unlockNote: 'Endless mode unlocked!', goal: 'Target', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
+      unlockNote: 'Endless mode unlocked!', goal: 'Target', nextSong: 'NEXT', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
         'Each of the four bars has a color. <b>Throw the brick at the bar of the same color!</b> Only a matching bar breaks it.',
         'Now throw it at a <b>bar of another color</b> on purpose.',
         'On a wrong color the brick stops in front and <b>on Expert the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
-        'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
+        'Hitting matching bars <b>in a row builds a combo</b> for more points. Break three in a row.',
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
-        'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing on the beat.',
-        'You\'re ready! In a stage, bricks drop with the music and songs play back to back. Reach the target score before the board <b>fills up</b> to clear it.'
+        'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing.',
+        'You\'re ready! In a stage, songs play back to back and bricks come faster with every song. Reach the target score before the board <b>fills up</b> to clear it.'
       ],
       wrongWall: 'Wrong color', tutWrong: 'Wrong color, so the bars turned. Find the matching bar again!', tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
       clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
-      hint: 'Push bricks on the beat · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
+      hint: 'Push bricks into matching bars · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
       rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
       privacy: 'Privacy Policy',
       myRecords: 'My records', rankProto: 'Per-song rankings with friends are coming soon. For now, here are your best scores on this device.', noRecord: '–',
@@ -1380,7 +1445,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function layout() {
     const r = stageEl.getBoundingClientRect();
     S = Math.max(200, Math.floor(Math.min(r.width, r.height - LH - 12 - (song.tutorial ? 76 : 0))));   // tutorial keeps room for hints
-    M = Math.max(30, Math.round(S * 0.085));
+    M = Math.max(24, Math.round(S * 0.07));   // slimmer frame, more room for the bricks
     B = S - 2 * M;
     cell = B / N;
     const dpr = window.devicePixelRatio || 1;
@@ -1391,27 +1456,23 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     lane.style.width = S + 'px'; lane.style.height = LH + 'px';
     lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // tall screens: the play area sits low and the song's show fills the space above it (not in the tutorial)
-    const spare = r.height - S - LH - 24 - Math.max(40, innerHeight * 0.06);
-    stageEl.classList.toggle('hasshow', spare >= 150 && !song.tutorial);
-    if (stageEl.classList.contains('hasshow')) {
+    const spare = r.height - S - LH - 24;
+    const on = spare >= 96 && !song.tutorial;
+    stageEl.classList.toggle('hasshow', on); $('game').classList.toggle('showon', on);
+    if (on) {
+      $('showP').style.width = S + 'px';   // the show panel lines up with the board below it
       showW = show.clientWidth; showH = show.clientHeight;
       show.width = showW * dpr; show.height = showH * dpr; sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     } else showH = 0;
-    // big floating combo when there is room above the note lane (not during the tutorial, whose hints live there)
-    const cb = $('combo'), room = lane.offsetTop, fl = room >= 120 && !song.tutorial;
-    if (fl && cb.parentNode !== stageEl) { stageEl.append(cb); cb.classList.add('float'); }
-    if (!fl && cb.parentNode === stageEl) { $('hudR').before(cb); cb.classList.remove('float'); }
-    if (fl) cb.style.top = (showH ? room - 50 : room / 2) + 'px'; else cb.style.top = '';
-    cb.classList.toggle('low', !!showH);
     // tutorial hints sit just above the note lane
     const tb = $('tutBox').style, ly = lane.offsetTop;
-    tb.top = 'auto'; tb.bottom = (stage.clientHeight - ly + 6) + 'px';
+    tb.top = 'auto'; tb.bottom = (stageEl.clientHeight - ly + 6) + 'px';
   }
 
   // stage show: the cover bounces on every beat inside a ring of bars that follow the music
   function drawShow(now) {
     if (!showH) return;
-    const W = showW, H = showH - 70, cx = W / 2, cy = Math.max(40, H / 2);
+    const W = showW, H = showH - 18, cx = W / 2, cy = H / 2;   // room for the next-song line at the bottom
     sctx.clearRect(0, 0, W, showH);
     if (H < 60) return;
     if (showId !== song.id) {
@@ -1503,14 +1564,20 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
 
   function songLabel() {
-    $('lvl').textContent = song.tutorial ? song.name[lang] : song.name[lang] + ' · ' + t('diffs')[diff] + (endless ? ' · ∞' : '');
+    $('lvl').textContent = song.name[lang];
+    $('sSub').textContent = song.tutorial ? '' : stage.name[lang] + ' · ' + t('diffs')[diff] + (endless ? ' · ∞' : '');
   }
   // top bar: how close the score is to the stage's target (the song's progress in the tutorial and endless runs)
+  // song card: the song's progress and time; score panel: how close the score is to the stage's target
+  let shownSec = -1;
   function hudSong() {
-    const f = song.tutorial || endless || !run ? sp / song.len : score / targetFor();
-    $('lvfill').style.width = Math.max(0, Math.min(1, f)) * 100 + '%';
+    $('lvfill').style.width = Math.max(0, Math.min(1, sp / song.len)) * 100 + '%';
+    const sec = Math.max(0, Math.floor(sp));
+    if (sec !== shownSec) { shownSec = sec; $('sTime').textContent = mmss(Math.min(sec, song.len)) + ' / ' + mmss(song.len); }
+    const goal = !song.tutorial && !endless && run;
+    $('goalBar').hidden = !goal;
+    if (goal) $('goalfill').style.width = Math.min(1, score / targetFor()) * 100 + '%';
   }
-
   function pickType(bar) {
     if (forceType) { const k = forceType; forceType = null; return k; }
     const k = kinds, has = x => x in k && bar >= k[x];
@@ -1552,10 +1619,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (kind === 'wrong') return tutShow(t('tutWrong'));
     if (st === 0 && kind === 'slam') return tutGo(1);
     if (st === 2 && kind === 'slam') return tutGo(3);
-    if (st === 3 && kind === 'push') {
-      if (j < 2) { if (++tut.n >= 3) return tutGo(4); tutShow(t('tutGood')); }
-      else tutShow(t('tutMiss'));
-    }
+    if (st === 3 && kind === 'slam') { if (++tut.n >= 3) return tutGo(4); tutShow(t('tutGood')); }
     if (st === 4 && kind === 'full') return tutGo(5);
     if (st === 5 && kind === 'fever') return tutGo(6);
     if (st === 6 && kind === 'slam' && ++tut.n >= 4) return tutGo(7);
@@ -1584,8 +1648,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
     const now = performance.now();
     for (let i = 0; i < barPat(song, bar)[s8] && !over; i++) spawn(now, bar);
-    // endless: every song after the first adds stray bricks on the beat, so the board fills faster and faster
-    if (endless && run && s8 % 2 === 0 && !over && Math.random() < Math.min(0.5, 0.08 * run.done)) spawn(now, bar);
+    // every song after the first adds stray bricks, so the board fills faster and faster (faster still in Endless)
+    if (run && s8 % 2 === 0 && !over && Math.random() < Math.min(0.5, (endless ? 0.08 : 0.05) * run.done)) spawn(now, bar);
   }
 
   const fever = () => sp < feverUntil;
@@ -1610,27 +1674,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     hud();
   }
 
-  // judge a push against the nearest beat; ts is the input event's timestamp
-  function judge(ts) {
-    // sp was taken at the last frame (time `last`); move it to the moment of the input
-    const at = sp + ((ts || performance.now()) - last) / 1000 - calib;
-    const ph = at / song.spb, err = Math.abs(ph - Math.round(ph)) * song.spb;
-    const j = err <= WIN_PERFECT ? 0 : err <= WIN_GREAT ? 1 : 2;
-    judges[j]++;
-    combo = j < 2 ? combo + 1 : 0;
-    maxCombo = Math.max(maxCombo, combo);
-    if (j === 2) sfx.miss();
-    lastJ = { j, t: performance.now() };
-    return j;
-  }
+  // no timing judgement any more: a push is just a push (1 = the plain "GREAT" weight)
+  function judge() { return 1; }
 
   function push(b, d, ts) {
     if (!blocks.includes(b)) return;
     const { dx, dy } = DIRS[d];
     const j = judge(ts);
     tutEvent('push', j);
-    const jx = M + ((b.slide ? b.slide.fx : b.x) + 0.5) * cell, jy = M + ((b.slide ? b.slide.fy : b.y) + 0.5) * cell;
-    pops.push({ x: jx, y: jy - cell * 0.3, text: t('judgeNames')[j], life: 1, c: JUDGE_COL[j], small: true });
     // slide until the wall or the cell before another brick
     let x = b.x, y = b.y;
     while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; }
@@ -1652,9 +1703,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (toWall) {
       grid[b.y * N + b.x] = null;
       blocks.splice(blocks.indexOf(b), 1);
-      // the slam lands on the next 16th note, so every hit is in time with the music
+      combo++; maxCombo = Math.max(maxCombo, combo);   // combo = matching slams in a row
       const dist = d === 0 ? sy : d === 1 ? N - 1 - sx : d === 2 ? N - 1 - sy : sx;
-      const s16 = song.spb / 4, s1 = Math.ceil((sp + dist / 28 + 0.03) / s16) * s16;
+      const s1 = sp + dist / 28 + 0.03;
       moving.push({ fx: sx, fy: sy, x0: sx, y0: sy, dist, s0: sp, s1, d, j, type: b.type, hp: b.hp, c: b.c });
       if (b === selected) selected = null;
       if (b === hover) hover = null;
@@ -1777,10 +1828,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     art.style.background = song.tutorial ? '' : `linear-gradient(155deg, ${stage.cover[0]}, #160b2a 70%)`;
     $('rSong').textContent = song.tutorial ? song.name[lang] : stage.name[lang];
     $('rDiff').textContent = song.tutorial ? '' : t('diffs')[diff] + ' · ' + N + ' × ' + N + (endless ? ' · ' + t('endless') : '');
-    $('grade').hidden = !won;
-    const jn = t('judgeNames');
-    $('judges').innerHTML = ['p', 'g', 'm'].map((c, i) => `<span class="${c}">${jn[i]} <b>${judges[i]}</b></span>`).join('') +
-      `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
+    $('grade').hidden = true;
+    $('judges').innerHTML = `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
     $('finalScore').textContent = score.toLocaleString();
     $('finalBest').textContent = best.toLocaleString();
     $('newBest').hidden = !isBest || score === 0;
@@ -2040,14 +2089,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ctx.strokeStyle = isFever ? C.fever : C.glow; ctx.globalAlpha = 0.25 + 0.6 * pulse * (downbeat ? 1 : 0.7); ctx.lineWidth = 2 + 2 * pulse;
       rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.stroke();
       ctx.globalAlpha = 1;
-      for (const [cx, cy] of [[M / 2, M / 2], [S - M / 2, M / 2], [M / 2, S - M / 2], [S - M / 2, S - M / 2]]) {
-        const dotR = M * 0.13, ringR = dotR + (1 - ph) * M * 0.32;
-        ctx.fillStyle = pulse > 0.5 ? C.ink : (isFever ? C.fever : C.glow);
-        ctx.shadowColor = C.glow; ctx.shadowBlur = 14 * pulse;
-        ctx.beginPath(); ctx.arc(cx, cy, dotR * (1 + 0.5 * pulse), 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0; ctx.globalAlpha = 0.25 + 0.6 * ph; ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
-      }
       ctx.restore();
     }
     const aimed = drag ? drag.b : hover;
@@ -2058,18 +2099,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
       if (b.bump && !reduceMotion) { const q = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * q; by += DIRS[b.bump.d].dy * q; }
       drawBrick(bx, by, Math.max(0, sc), b, now, b === aimed);
-      // note on the brick: a ring shrinks onto its edge and lands exactly on each beat
-      if (!over && sp > -3 * song.spb && k >= 1) {
-        const size = cell * 0.86, g = 1 + 0.35 * (1 - ph), w = size * g, r = Math.min(14, size * 0.18) * g;
-        const cx = M + (bx + 0.5) * cell, cy = M + (by + 0.5) * cell;
-        ctx.save();
-        ctx.globalAlpha = pulse > 0.4 ? 0.9 * pulse : 0.12 + 0.6 * ph;
-        ctx.strokeStyle = pulse > 0.4 ? C.glow : isFever ? C.fever : C.ink;
-        ctx.lineWidth = 2 + 3 * pulse;
-        if (pulse > 0.4) { ctx.shadowColor = C.glow; ctx.shadowBlur = 16 * pulse; }
-        rr(cx - w / 2, cy - w / 2, w, w, r); ctx.stroke();
-        ctx.restore();
-      }
+      if (!over && k >= 1) drawAim(b, bx, by, now);
     }
     for (const m of moving) drawBrick(m.fx, m.fy, 1, m, now, false);
     // tutorial hint: chevrons sweeping out of the first brick to show a swipe
@@ -2173,9 +2203,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       if (cShow !== shownCombo) {
         shownCombo = cShow;
         const el = $('combo'); el.classList.toggle('on', cShow > 0);
-        if (cShow) { el.innerHTML = '<b>' + cShow + '</b><span>COMBO</span>'; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+        el.textContent = cShow ? '×' + cShow : '0';
+        if (cShow) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
       }
-      $('feverfill').style.width = fever() ? ((feverUntil - sp) / feverTotal * 100) + '%' : '0';
     }
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.94; p.vy *= 0.94; p.life -= dt * 1.8;
@@ -2190,7 +2220,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     shake = Math.max(0, shake - dt * 45);
     for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt * 2.6; if (rings[i].life <= 0) rings.splice(i, 1); }
     if (banner && (banner.life -= dt / 2.2) <= 0) banner = null;
-    if (grid) { draw(now); drawLane(now); drawShow(now); }
+    if (grid) { draw(now); drawShow(now); }
     requestAnimationFrame(tick);
   }
 
@@ -2237,6 +2267,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   // fetch the next song while this one plays
   function preloadNext() { if (run && !tut) { const nx = runSong(run.i + 1); if (nx !== song) sfx.load(nx).catch(() => {}); } }
   function setSongLook() {
+    $('sArt').innerHTML = tut ? '' : (COVERS[song.id] || '');
+    const nx = run && !tut ? runSong(run.i + 1) : null;
+    $('nextP').classList.toggle('none', !nx);
+    if (nx) $('nName').textContent = nx.name[lang];
+    shownSec = -1;
     const bgImg = !tut && /src="([^"]+)"/.exec(COVERS[song.id] || '');
     $('songBg').classList.toggle('on', !!bgImg); if (bgImg) $('songBg').style.backgroundImage = `url("${bgImg[1]}")`;
     document.documentElement.style.setProperty('--beat', song.spb + 's');
