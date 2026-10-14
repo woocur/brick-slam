@@ -364,7 +364,7 @@ body.playing .songbg.on { opacity: .7; }
 }
 .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 canvas { display: block; touch-action: none; max-width: 100%; }
-.lane { display: block; flex: none; }
+.lane { display: none; }
 /* stage show above the play area: the song's cover pulsing on the beat inside a ring of spectrum bars */
 .stage.hasshow { justify-content: flex-end; }
 .showp { display: none; position: relative; flex: 1; min-height: 0; }
@@ -496,7 +496,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     <ol>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><defs><marker id="ha" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#fff"/></marker></defs><rect x="19" y="19" width="58" height="58" rx="6" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="20" y="9" width="56" height="5" rx="2.5" fill="#2ef2ff"/><rect x="82" y="20" width="5" height="56" rx="2.5" fill="#ff3fa4"/><rect x="20" y="82" width="56" height="5" rx="2.5" fill="#4dff7c"/><rect x="9" y="20" width="5" height="56" rx="2.5" fill="#ff8f3a"/><rect x="24" y="40" width="16" height="16" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><path d="M44 48H72" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4" marker-end="url(#ha)"/><g stroke="#ff3fa4" stroke-width="2" stroke-linecap="round"><path d="M90 36l4-4M90 60l4 4M91 48h4"/></g></svg><div><b data-i18n="how1t"></b><span data-i18n="how1"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><defs><marker id="ha" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#fff"/></marker></defs><rect x="19" y="19" width="58" height="58" rx="6" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="20" y="9" width="56" height="5" rx="2.5" fill="#2ef2ff"/><rect x="82" y="20" width="5" height="56" rx="2.5" fill="#ff3fa4"/><rect x="20" y="82" width="56" height="5" rx="2.5" fill="#4dff7c"/><rect x="9" y="20" width="5" height="56" rx="2.5" fill="#ff8f3a"/><rect x="58" y="40" width="16" height="16" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><path transform="rotate(0 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(90 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(180 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path transform="rotate(270 48 48)" d="M74 4Q92 4 92 20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ha)"/><path d="M38 42l8 8M46 42l-8 8" stroke="#ff4d5e" stroke-width="2.6" stroke-linecap="round"/></svg><div><b data-i18n="how2t"></b><span data-i18n="how2"></span></div></li>
-      <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="36" y="22" width="24" height="24" rx="5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.5"/><rect x="27" y="13" width="42" height="42" rx="10" fill="none" stroke="#2ef2ff" stroke-width="2" stroke-dasharray="4 3"/><g stroke="#2ef2ff" stroke-width="2" stroke-linecap="round"><path d="M22 34h5M69 34h5M48 8v5"/></g><rect x="8" y="68" width="80" height="14" rx="7" fill="#1c1236"/><circle cx="18" cy="75" r="6" fill="none" stroke="#2ef2ff" stroke-width="2"/><circle cx="40" cy="75" r="2.5" fill="#a99fd0"/><circle cx="58" cy="75" r="2.5" fill="#a99fd0"/><circle cx="76" cy="75" r="2.5" fill="#a99fd0"/></svg><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
+      <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="84" y="10" width="7" height="76" rx="3.5" fill="#ff3fa4"/><rect x="50" y="38" width="20" height="20" rx="4" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.5"/><rect x="28" y="38" width="16" height="20" rx="4" fill="none" stroke="#ff3fa4" stroke-width="2" opacity=".55"/><rect x="10" y="38" width="12" height="20" rx="4" fill="none" stroke="#ff3fa4" stroke-width="2" opacity=".3"/><text x="48" y="28" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="16" fill="#2ef2ff">×3</text></svg><div><b data-i18n="how3t"></b><span data-i18n="how3"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="42" y="8" width="12" height="80" rx="6" fill="#ffd84d" style="filter:drop-shadow(0 0 6px #ffd84d)"/><circle cx="48" cy="48" r="11" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="48" cy="48" r="19" fill="none" stroke="#fff" stroke-width="1.5" opacity=".45"/><text x="72" y="30" fill="#ffd84d" font-size="17" font-weight="700" font-family="inherit">×2</text></svg><div><b data-i18n="how4t"></b><span data-i18n="how4"></span></div></li>
       <li><svg class="pic" viewBox="0 0 96 96" aria-hidden="true"><rect x="6" y="14" width="84" height="7" rx="3.5" fill="#1c1236"/><rect x="6" y="14" width="84" height="7" rx="3.5" fill="url(#hg)"/><defs><linearGradient id="hg"><stop offset="0" stop-color="#8f5bff"/><stop offset="1" stop-color="#2ef2ff"/></linearGradient></defs><rect x="4" y="43" width="40" height="40" rx="5" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="19" y="58" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="52" y="43" width="40" height="40" rx="5" fill="#0d0820" stroke="#3a2a66" stroke-width="1.5"/><rect x="55" y="46" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="67" y="46" width="10" height="10" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><rect x="79" y="46" width="10" height="10" rx="3.5" fill="#08361a" stroke="#4dff7c" stroke-width="2.2"/><rect x="55" y="58" width="10" height="10" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><rect x="67" y="58" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><rect x="79" y="58" width="10" height="10" rx="3.5" fill="#3d1a05" stroke="#ff8f3a" stroke-width="2.2"/><rect x="55" y="70" width="10" height="10" rx="3.5" fill="#08361a" stroke="#4dff7c" stroke-width="2.2"/><rect x="67" y="70" width="10" height="10" rx="3.5" fill="#3a0a2a" stroke="#ff3fa4" stroke-width="2.2"/><rect x="79" y="70" width="10" height="10" rx="3.5" fill="#06303a" stroke="#2ef2ff" stroke-width="2.2"/><path d="M16 33l4 4 8-8" fill="none" stroke="#4dff7c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M66 29l8 8M74 29l-8 8" stroke="#ff4d5e" stroke-width="3" stroke-linecap="round"/></svg><div><b data-i18n="how5t"></b><span data-i18n="how5"></span></div></li>
     </ol>
@@ -610,7 +610,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const cv = $('cv'), ctx = cv.getContext('2d'), stageEl = $('stage');
   const show = $('show'), sctx = show.getContext('2d'), spec = new Uint8Array(128);
   let showW = 0, showH = 0, showImg = null, showId = '';
-  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 60;   // note lane above the board
+  const lane = $('lane'), lctx = lane.getContext('2d'), LH = 0;   // the note lane is gone with the rhythm rules
   const css = getComputedStyle(document.documentElement);
   const C = {};
   ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
@@ -620,8 +620,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const CFG = { 4: { cap: 16, need: 6 }, 5: { cap: 25, need: 8 } };
   const SLIDE_SPEED = 14;      // cells per second (slides that stop against another brick)
   const FEVER_BEATS = 16, FEVER_EXTEND_BEATS = 8;
-  // timing windows around each beat, in seconds; points multiplier per judgement (PERFECT, GREAT, MISS)
-  const WIN_PERFECT = 0.055, WIN_GREAT = 0.11, JUDGE_MUL = [2, 1.5, 1];
+  // points multiplier per judgement (kept flat now that there is no timing judgement)
+  const JUDGE_MUL = [1, 1, 1];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- songs: each one is a stage that ends when the music ends ----------
@@ -842,6 +842,36 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const nColors = () => song.tutorial || diff >= 3 ? 4 : diff === 2 ? 2 : 1;
   const wallColors = () => nColors() === 4 ? [0, 1, 2, 3] : nColors() === 2 ? [0, 1, 0, 1] : [0, 0, 0, 0];
   const fits = (b, d) => (b.type || 'n') !== 'n' || b.c == null || b.c === bars[d].c || fever();
+  // which way to push a brick: a wall it may hit (its color, or any in Fever / for plain bricks), the open path first, then the shortest
+  function aimDir(b) {
+    let best = -1, bestScore = -1e9;
+    for (let d = 0; d < 4; d++) {
+      if (!fits(b, d)) continue;
+      const { dx, dy } = DIRS[d];
+      let x = b.x, y = b.y, n = 0;
+      while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; n++; }
+      const open = !(x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N);
+      const sc = (open ? 100 : 0) - n;
+      if (sc > bestScore) { bestScore = sc; best = d; }
+    }
+    return best;
+  }
+  // arrow on each brick toward the bar it should be thrown at, in that bar's color, like a flick note
+  function drawAim(b, bx, by, now) {
+    const d = aimDir(b);
+    if (d < 0) return;
+    const { dx, dy } = DIRS[d], cx = M + (bx + 0.5) * cell, cy = M + (by + 0.5) * cell;
+    const wob = reduceMotion ? 0 : Math.sin(now / 180) * cell * 0.03;
+    const off = cell * 0.24 + wob, w = cell * 0.13, col = fever() ? (C.fever || '#ffd84d') : WALL_COL[bars[d].c][1];
+    ctx.save();
+    ctx.translate(cx + dx * off, cy + dy * off); ctx.rotate(Math.atan2(dy, dx));
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(8, 4, 20, .85)'; ctx.lineWidth = Math.max(5, cell * 0.075);
+    ctx.beginPath(); ctx.moveTo(-w * 0.7, -w); ctx.lineTo(w * 0.3, 0); ctx.lineTo(-w * 0.7, w); ctx.stroke();
+    ctx.strokeStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.lineWidth = Math.max(3, cell * 0.045);
+    ctx.beginPath(); ctx.moveTo(-w * 0.7, -w); ctx.lineTo(w * 0.3, 0); ctx.lineTo(-w * 0.7, w); ctx.stroke();
+    ctx.restore();
+  }
   let barRotAt = -1e9;   // when the bars last turned, for the swing animation
   const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   let beatGlow = 0;   // 0..1, spikes on every beat; bricks and the floor of the board pulse with it
@@ -855,7 +885,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       howTitle: '하는 법',
       how1t: '벽으로 던지기', how1: '벽돌을 바 쪽으로 밀면 쾅! 사라져요. 어려움부터는 같은 색 바에 맞혀야 해요.',
       how2t: '색이 다르면', how2: '벽 앞에 멈추고 콤보가 끊겨요. 어려움은 2색, 아주 어려움은 4색이고 바가 한 칸씩 돌아요.',
-      how3t: '박자에 맞춰', how3: '줄어드는 링이 벽돌에 닿을 때 밀면 PERFECT! 콤보가 쌓여요.',
+      how3t: '콤보', how3: '같은 색 바에 연달아 맞히면 콤보가 쌓여 점수가 올라요.',
       how4t: '피버', how4: '빛나는 바를 누르면 점수 2배. 피버 중엔 아무 벽이나 OK!',
       how5t: '목표 점수', how5: '곡이 이어서 나와요. 목표 점수를 내면 클리어, 판이 꽉 차면 실패예요.',
       howKinds: '어려운 곡엔 특수 벽돌도 나와요',
@@ -877,17 +907,17 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         '네 바는 저마다 색이 있어요. 벽돌을 <b>같은 색 바로 던지세요!</b> 같은 색 바에 맞아야 깨져요.',
         '이번엔 일부러 <b>다른 색 바로</b> 던져 보세요.',
         '색이 다르면 벽돌은 바 앞에 멈추고 <b>아주 어려움에서는 네 바가 한 칸씩 돌아요</b>. 이제 <b>같은 색 바</b>를 찾아 던져서 깨 보세요.',
-        '이번엔 박자에 맞춰요. 벽돌 둘레의 <b>링이 줄어들어 벽돌에 닿는 순간</b> 밀어 보세요.',
+        '같은 색 바에 <b>연달아 맞히면 콤보</b>가 쌓여 점수가 올라요. 세 번 연달아 깨 보세요.',
         '벽에 부딪힐 때마다 그쪽 <b>바에 빛이 차요</b>. 벽돌을 밀어서 바 하나를 가득 채워 보세요.',
         '바가 빛나죠? <b>빛나는 바를 눌러</b> 피버를 켜 보세요.',
-        '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 박자에 맞춰 계속 밀어 보세요.',
-        '준비 끝! 스테이지에서는 벽돌이 음악에 맞춰 떨어지고 곡이 이어서 나와요. <b>판이 꽉 차기 전에</b> 목표 점수를 내면 클리어예요.'
+        '피버 동안 <b>점수가 두 배</b>이고 <b>아무 벽이나</b> 괜찮아요. 계속 밀어 보세요.',
+        '준비 끝! 스테이지에서는 곡이 이어서 나오고 곡이 바뀔 때마다 벽돌이 더 빨리 나와요. <b>판이 꽉 차기 전에</b> 목표 점수를 내면 클리어예요.'
       ],
       wrongWall: '색이 달라요', tutWrong: '색이 달라서 바가 돌았어요. 같은 색 바를 다시 찾아봐요!', tutCount: (a, b) => a + ' / ' + b, tutMiss: '조금 빨랐거나 늦었어요. 링이 닿는 순간!', tutGood: '좋아요!',
       clearTitle: '클리어!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: '최대 콤보',
       quit: '그만하기', score: '점수', mult: '배수', bricks: '벽돌', best: '최고', boardAria: '브릭 슬램 게임판',
       overTitle: '판이 꽉 찼어요', newBest: '새 최고 점수예요!', retry: '다시 하기', home: '처음 화면',
-      hint: '박자에 맞춰 벽돌을 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
+      hint: '벽돌을 같은 색 바로 밀기 · 빛나는 바를 눌러 피버', keyboard: '마우스로 겨누고',
       rankLoading: '랭킹을 불러오는 중이에요', rankSignIn: '랭킹은 claude.ai에 로그인하면 볼 수 있어요',
       privacy: '개인정보처리방침',
       myRecords: '내 기록', rankProto: '친구들과 겨루는 곡별 랭킹은 준비 중이에요. 지금은 이 기기에 남은 내 최고 기록을 보여 드려요.', noRecord: '–',
@@ -905,7 +935,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       howTitle: 'How to play',
       how1t: 'Slam it', how1: 'Push a brick into a bar. Slam! From Hard on, it must be the bar of its color.',
       how2t: 'Wrong color', how2: 'It stops by the wall and the combo breaks. Hard has 2 colors; Expert has 4 and the bars turn one place.',
-      how3t: 'On the beat', how3: 'Push when the shrinking ring touches the brick for a PERFECT and a combo.',
+      how3t: 'Combo', how3: 'Hit matching bars in a row to build a combo and score more.',
       how4t: 'Fever', how4: 'Tap a glowing bar for 2× points. Any wall works during Fever!',
       how5t: 'Target score', how5: 'Songs play back to back. Reach the target score to clear; a full board means fail.',
       howKinds: 'Harder songs add special bricks',
@@ -927,17 +957,17 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         'Each of the four bars has a color. <b>Throw the brick at the bar of the same color!</b> Only a matching bar breaks it.',
         'Now throw it at a <b>bar of another color</b> on purpose.',
         'On a wrong color the brick stops in front and <b>on Expert the four bars turn one place</b>. Now find the <b>matching bar</b> and throw it there.',
-        'Now on the beat. Push the moment the <b>ring around the brick closes onto it</b>.',
+        'Hitting matching bars <b>in a row builds a combo</b> for more points. Break three in a row.',
         'Every slam <b>fills that wall\'s bar</b>. Slam bricks until one bar is full.',
         'See the glowing bar? <b>Tap it</b> to start Fever.',
-        'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing on the beat.',
-        'You\'re ready! In a stage, bricks drop with the music and songs play back to back. Reach the target score before the board <b>fills up</b> to clear it.'
+        'Fever <b>doubles your points</b> and <b>any wall works</b>. Keep pushing.',
+        'You\'re ready! In a stage, songs play back to back and bricks come faster with every song. Reach the target score before the board <b>fills up</b> to clear it.'
       ],
       wrongWall: 'Wrong color', tutWrong: 'Wrong color, so the bars turned. Find the matching bar again!', tutCount: (a, b) => a + ' / ' + b, tutMiss: 'A little early or late. Push as the ring lands!', tutGood: 'Nice!',
       clearTitle: 'Clear!', drop: 'DROP!', go: 'GO!', judgeNames: ['PERFECT', 'GREAT', 'MISS'], maxCombo: 'Max combo',
       quit: 'Quit', score: 'Score', mult: 'Multi', bricks: 'Bricks', best: 'Best', boardAria: 'Brick Slam board',
       overTitle: 'Board full!', newBest: 'New personal best!', retry: 'Play again', home: 'Title screen',
-      hint: 'Push bricks on the beat · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
+      hint: 'Push bricks into matching bars · Tap a glowing bar for Fever', keyboard: 'Point with the mouse, then',
       rankLoading: 'Loading ranking…', rankSignIn: 'Sign in to claude.ai to see the ranking',
       privacy: 'Privacy Policy',
       myRecords: 'My records', rankProto: 'Per-song rankings with friends are coming soon. For now, here are your best scores on this device.', noRecord: '–',
@@ -1589,10 +1619,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (kind === 'wrong') return tutShow(t('tutWrong'));
     if (st === 0 && kind === 'slam') return tutGo(1);
     if (st === 2 && kind === 'slam') return tutGo(3);
-    if (st === 3 && kind === 'push') {
-      if (j < 2) { if (++tut.n >= 3) return tutGo(4); tutShow(t('tutGood')); }
-      else tutShow(t('tutMiss'));
-    }
+    if (st === 3 && kind === 'slam') { if (++tut.n >= 3) return tutGo(4); tutShow(t('tutGood')); }
     if (st === 4 && kind === 'full') return tutGo(5);
     if (st === 5 && kind === 'fever') return tutGo(6);
     if (st === 6 && kind === 'slam' && ++tut.n >= 4) return tutGo(7);
@@ -1621,8 +1648,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     }
     const now = performance.now();
     for (let i = 0; i < barPat(song, bar)[s8] && !over; i++) spawn(now, bar);
-    // endless: every song after the first adds stray bricks on the beat, so the board fills faster and faster
-    if (endless && run && s8 % 2 === 0 && !over && Math.random() < Math.min(0.5, 0.08 * run.done)) spawn(now, bar);
+    // every song after the first adds stray bricks, so the board fills faster and faster (faster still in Endless)
+    if (run && s8 % 2 === 0 && !over && Math.random() < Math.min(0.5, (endless ? 0.08 : 0.05) * run.done)) spawn(now, bar);
   }
 
   const fever = () => sp < feverUntil;
@@ -1647,27 +1674,14 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     hud();
   }
 
-  // judge a push against the nearest beat; ts is the input event's timestamp
-  function judge(ts) {
-    // sp was taken at the last frame (time `last`); move it to the moment of the input
-    const at = sp + ((ts || performance.now()) - last) / 1000 - calib;
-    const ph = at / song.spb, err = Math.abs(ph - Math.round(ph)) * song.spb;
-    const j = err <= WIN_PERFECT ? 0 : err <= WIN_GREAT ? 1 : 2;
-    judges[j]++;
-    combo = j < 2 ? combo + 1 : 0;
-    maxCombo = Math.max(maxCombo, combo);
-    if (j === 2) sfx.miss();
-    lastJ = { j, t: performance.now() };
-    return j;
-  }
+  // no timing judgement any more: a push is just a push (1 = the plain "GREAT" weight)
+  function judge() { return 1; }
 
   function push(b, d, ts) {
     if (!blocks.includes(b)) return;
     const { dx, dy } = DIRS[d];
     const j = judge(ts);
     tutEvent('push', j);
-    const jx = M + ((b.slide ? b.slide.fx : b.x) + 0.5) * cell, jy = M + ((b.slide ? b.slide.fy : b.y) + 0.5) * cell;
-    pops.push({ x: jx, y: jy - cell * 0.3, text: t('judgeNames')[j], life: 1, c: JUDGE_COL[j], small: true });
     // slide until the wall or the cell before another brick
     let x = b.x, y = b.y;
     while (x + dx >= 0 && x + dx < N && y + dy >= 0 && y + dy < N && !grid[(y + dy) * N + x + dx]) { x += dx; y += dy; }
@@ -1689,9 +1703,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     if (toWall) {
       grid[b.y * N + b.x] = null;
       blocks.splice(blocks.indexOf(b), 1);
-      // the slam lands on the next 16th note, so every hit is in time with the music
+      combo++; maxCombo = Math.max(maxCombo, combo);   // combo = matching slams in a row
       const dist = d === 0 ? sy : d === 1 ? N - 1 - sx : d === 2 ? N - 1 - sy : sx;
-      const s16 = song.spb / 4, s1 = Math.ceil((sp + dist / 28 + 0.03) / s16) * s16;
+      const s1 = sp + dist / 28 + 0.03;
       moving.push({ fx: sx, fy: sy, x0: sx, y0: sy, dist, s0: sp, s1, d, j, type: b.type, hp: b.hp, c: b.c });
       if (b === selected) selected = null;
       if (b === hover) hover = null;
@@ -1814,10 +1828,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     art.style.background = song.tutorial ? '' : `linear-gradient(155deg, ${stage.cover[0]}, #160b2a 70%)`;
     $('rSong').textContent = song.tutorial ? song.name[lang] : stage.name[lang];
     $('rDiff').textContent = song.tutorial ? '' : t('diffs')[diff] + ' · ' + N + ' × ' + N + (endless ? ' · ' + t('endless') : '');
-    $('grade').hidden = !won;
-    const jn = t('judgeNames');
-    $('judges').innerHTML = ['p', 'g', 'm'].map((c, i) => `<span class="${c}">${jn[i]} <b>${judges[i]}</b></span>`).join('') +
-      `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
+    $('grade').hidden = true;
+    $('judges').innerHTML = `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
     $('finalScore').textContent = score.toLocaleString();
     $('finalBest').textContent = best.toLocaleString();
     $('newBest').hidden = !isBest || score === 0;
@@ -2077,14 +2089,6 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ctx.strokeStyle = isFever ? C.fever : C.glow; ctx.globalAlpha = 0.25 + 0.6 * pulse * (downbeat ? 1 : 0.7); ctx.lineWidth = 2 + 2 * pulse;
       rr(M - P, M - P, B + 2 * P, B + 2 * P, 14); ctx.stroke();
       ctx.globalAlpha = 1;
-      for (const [cx, cy] of [[M / 2, M / 2], [S - M / 2, M / 2], [M / 2, S - M / 2], [S - M / 2, S - M / 2]]) {
-        const dotR = M * 0.13, ringR = dotR + (1 - ph) * M * 0.32;
-        ctx.fillStyle = pulse > 0.5 ? C.ink : (isFever ? C.fever : C.glow);
-        ctx.shadowColor = C.glow; ctx.shadowBlur = 14 * pulse;
-        ctx.beginPath(); ctx.arc(cx, cy, dotR * (1 + 0.5 * pulse), 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0; ctx.globalAlpha = 0.25 + 0.6 * ph; ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
-      }
       ctx.restore();
     }
     const aimed = drag ? drag.b : hover;
@@ -2095,18 +2099,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       let bx = b.slide ? b.slide.fx : b.x, by = b.slide ? b.slide.fy : b.y;
       if (b.bump && !reduceMotion) { const q = Math.sin(Math.PI * (1 - b.bump.t)) * 0.12; bx += DIRS[b.bump.d].dx * q; by += DIRS[b.bump.d].dy * q; }
       drawBrick(bx, by, Math.max(0, sc), b, now, b === aimed);
-      // note on the brick: a ring shrinks onto its edge and lands exactly on each beat
-      if (!over && sp > -3 * song.spb && k >= 1) {
-        const size = cell * 0.86, g = 1 + 0.35 * (1 - ph), w = size * g, r = Math.min(14, size * 0.18) * g;
-        const cx = M + (bx + 0.5) * cell, cy = M + (by + 0.5) * cell;
-        ctx.save();
-        ctx.globalAlpha = pulse > 0.4 ? 0.9 * pulse : 0.12 + 0.6 * ph;
-        ctx.strokeStyle = pulse > 0.4 ? C.glow : isFever ? C.fever : C.ink;
-        ctx.lineWidth = 2 + 3 * pulse;
-        if (pulse > 0.4) { ctx.shadowColor = C.glow; ctx.shadowBlur = 16 * pulse; }
-        rr(cx - w / 2, cy - w / 2, w, w, r); ctx.stroke();
-        ctx.restore();
-      }
+      if (!over && k >= 1) drawAim(b, bx, by, now);
     }
     for (const m of moving) drawBrick(m.fx, m.fy, 1, m, now, false);
     // tutorial hint: chevrons sweeping out of the first brick to show a swipe
@@ -2227,7 +2220,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     shake = Math.max(0, shake - dt * 45);
     for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt * 2.6; if (rings[i].life <= 0) rings.splice(i, 1); }
     if (banner && (banner.life -= dt / 2.2) <= 0) banner = null;
-    if (grid) { draw(now); drawLane(now); drawShow(now); }
+    if (grid) { draw(now); drawShow(now); }
     requestAnimationFrame(tick);
   }
 
