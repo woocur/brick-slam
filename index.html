@@ -347,7 +347,7 @@ body.playing .songbg.on { opacity: .7; }
 #score { font-size: 28px; text-shadow: 0 0 12px rgba(244, 241, 255, .35); }
 .goalbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 1px; }
 .goalbar.done i { background: linear-gradient(90deg, var(--fever), #fff); box-shadow: 0 0 6px var(--fever); }
-.misgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.misgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .misgrid .mis { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 0 5px; border-radius: 8px; border: 1px solid var(--line); background: var(--board); color: var(--ink); font: inherit; cursor: pointer; }
 .misgrid .mis b { font-size: 17px; line-height: 1.1; }
 .misgrid .mis small { font-size: 10px; color: var(--fever); letter-spacing: 1px; }
@@ -662,11 +662,12 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   let diff = 1, pickDiff = 1;   // pickDiff: the difficulty picked for Endless (a stage sets its own)
   try { const v = localStorage.getItem('brickslam-diff'); if (v !== null) diff = Math.max(0, Math.min(3, +v || 0)); } catch (e) {}
   // Expert plays the Hard chart; what sets it apart is the colors (see COLOR_WALLS)
-  const cdiff = () => Math.min(diff, 2);
+  const cdiff = () => mission ? mission.cfg.chart : Math.min(diff, 2);
   const chartPat = (s, bar) => { const p = s.pat[bar], m = DIFF_PAT[s.tutorial ? 1 : cdiff()]; return (m && m[p]) || p; };
   const barPat = (s, bar) => s.chartBars ? s.chartBars[cdiff()][bar] : PAT[chartPat(s, bar)];
   // special bricks: easy keeps only gold and stone and brings them in later; hard brings everything in 4 bars sooner
   function kindsFor(s) {
+    if (mission) return Object.assign({}, mission.cfg.kinds);   // a stage sets its own special bricks
     const out = {};
     for (const k in s.kinds) {
       const b = s.kinds[k];
@@ -782,24 +783,35 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     { id: 'metal', name: { ko: '하드록 · 메탈', en: 'Hard Rock & Metal' }, sub: { ko: '기타가 터지는 록', en: 'loud guitars' }, cover: ['#ff4d5e', '#ffd84d'], songs: [] }
   ];
   STAGES.forEach(st => { st.list = st.songs.map(id => SONGS.find(s => s.id === id)).filter(Boolean); });
-  // mission stages: a style's songs on easy, then normal, hard and expert, numbered 1, 2, 3 ... Each stage is one song.
-  // Lasting to the end of the song clears it and opens the next stage. Each stage also sets three challenges, one star each;
-  // a challenge done counts even in a run that fails. Saved per stage as bits: 1, 2, 4 = challenges, 8 = cleared.
-  STAGES.forEach(st => { st.missions = []; for (let d = 0; d < 4; d++) st.list.forEach(sg => st.missions.push({ song: sg, d })); });
-  const chartCount = (sg, d) => sg.chartBars ? sg.chartBars[Math.min(d, 2)].flat().reduce((a, c) => a + c, 0) : 0;
-  // challenges: bricks broken, Fever set off, combo reached (live); bricks on the board kept low, wrong walls (judged at the end)
-  // one color (easy, normal) never breaks a combo, so those stages ask for Fever and a calm board instead
-  function challenges(m) {
-    const bricks = { type: 'bricks', n: Math.max(1, Math.round(chartCount(m.song, m.d) * 0.7)) };
-    return m.d < 2 ? [bricks, { type: 'fever', n: 2 + m.d }, { type: 'calm', n: m.d === 0 ? 8 : 10 }]
-                   : [bricks, { type: 'combo', n: m.d === 2 ? 20 : 25 }, { type: 'clean', n: m.d === 2 ? 3 : 2 }];
-  }
+  // worlds and stages: each music genre is a world of ten stages that take turns over its songs. Each stage sets its own rules:
+  // chart density (0 light, 1 normal, 2 dense), wall colors (1, 2, 4), turning bars, board size, bricks already on the board,
+  // special bricks (bar each first appears) with odds multipliers, and three challenges (one star each).
+  // Lasting to the end of the song clears a stage and opens the next. Stars open later worlds (WORLD_STARS each).
+  const WORLD_STAGES = [
+    { chart: 0, colors: 1, size: 4, tag: { ko: '첫걸음', en: 'First steps' }, kinds: {}, ch: [['bricks', 0.6], ['fever', 1], ['calm', 8]] },
+    { chart: 1, colors: 1, size: 4, tag: { ko: '빨라진 박자', en: 'Faster' }, kinds: { gold: 8 }, ch: [['bricks', 0.7], ['fever', 2], ['calm', 9]] },
+    { chart: 0, colors: 2, size: 4, tag: { ko: '두 가지 색', en: 'Two colors' }, kinds: {}, ch: [['bricks', 0.6], ['combo', 10], ['clean', 4]] },
+    { chart: 1, colors: 1, size: 4, tag: { ko: '돌 벽돌', en: 'Stones' }, kinds: { stone: 1 }, odds: { stone: 2.5 }, ch: [['bricks', 0.6], ['fever', 2], ['calm', 10]] },
+    { chart: 1, colors: 2, size: 5, tag: { ko: '넓은 판', en: 'Big board' }, kinds: { gold: 4 }, ch: [['bricks', 0.7], ['combo', 15], ['calm', 14]] },
+    { chart: 1, colors: 1, size: 4, pre: 7, tag: { ko: '꽉 찬 시작', en: 'Crowded start' }, kinds: { stone: 8 }, ch: [['bricks', 0.65], ['fever', 2], ['calm', 11]] },
+    { chart: 1, colors: 2, size: 4, tag: { ko: '폭탄과 금', en: 'Bombs & gold' }, kinds: { bomb: 1, gold: 1 }, odds: { bomb: 2, gold: 2 }, ch: [['bricks', 0.7], ['combo', 15], ['clean', 3]] },
+    { chart: 0, colors: 4, size: 4, tag: { ko: '네 가지 색', en: 'Four colors' }, kinds: {}, ch: [['bricks', 0.6], ['combo', 10], ['clean', 4]] },
+    { chart: 1, colors: 4, size: 5, tag: { ko: '넓고 알록달록', en: 'Big & bright' }, kinds: { stone: 8, gold: 4 }, ch: [['bricks', 0.65], ['combo', 15], ['clean', 4]] },
+    { chart: 2, colors: 4, size: 4, rot: true, tag: { ko: '돌아가는 벽', en: 'Turning walls' }, kinds: { stone: 4, gold: 4, bomb: 12 }, ch: [['bricks', 0.6], ['combo', 20], ['clean', 3]] }
+  ];
+  const WORLD_STARS = 12;   // stars needed per world: world 2 opens at 12, world 3 at 24 ...
+  STAGES.forEach(st => { st.missions = st.list.length ? WORLD_STAGES.map((cfg, k) => ({ cfg, song: st.list[k % st.list.length], d: cfg.colors === 4 ? 3 : cfg.chart })) : []; });
+  const chartCount = (sg, c) => sg.chartBars ? sg.chartBars[c].flat().reduce((a, x) => a + x, 0) : 0;
+  const challenges = m => m.cfg.ch.map(([type, n]) => ({ type, n: type === 'bricks' ? Math.max(1, Math.round(chartCount(m.song, m.cfg.chart) * n)) : n }));
   const LIVE = { bricks: 1, fever: 1, combo: 1 };
   const starKey = (st, k) => 'brickslam-star-' + st.id + '-' + k;
   const misBits = (st, k) => lsNum(starKey(st, k));
   const starsOf = (st, k) => { const b = misBits(st, k); return (b & 1) + (b >> 1 & 1) + (b >> 2 & 1); };
   const clearedOf = (st, k) => !!(misBits(st, k) & 8);
-  const missionOpen = (st, k) => k === 0 || clearedOf(st, k - 1);
+  const missionOpen = (st, k) => worldOpen(st) && (k === 0 || clearedOf(st, k - 1));
+  const totalStars = () => STAGES.reduce((a, st) => a + st.missions.reduce((b, _, k) => b + starsOf(st, k), 0), 0);
+  const worldNeed = st => STAGES.indexOf(st) * WORLD_STARS;
+  const worldOpen = st => totalStars() >= worldNeed(st);
   // the stage to offer first: the earliest one not cleared yet, else the last one
   const firstMission = st => { let k = 0; while (k < st.missions.length - 1 && clearedOf(st, k)) k++; return k; };
   const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -877,7 +889,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const brickCol = b => (b.type || 'n') === 'n' && b.c != null ? WALL_COL[b.c] : KIND_COL[b.type === 'rain' || !KIND_COL[b.type] ? 'n' : b.type];
   // colors by difficulty (players' feedback): Easy/Normal have none (any wall works), Hard has two (top/bottom vs left/right),
   // Expert has all four and the bars turn on a wrong-color slam; the tutorial teaches the four-color game
-  const nColors = () => song.tutorial || diff >= 3 ? 4 : diff === 2 ? 2 : 1;
+  const nColors = () => song.tutorial ? 4 : mission ? mission.cfg.colors : diff >= 3 ? 4 : diff === 2 ? 2 : 1;
   const wallColors = () => nColors() === 4 ? [0, 1, 2, 3] : nColors() === 2 ? [0, 1, 0, 1] : [0, 0, 0, 0];
   const fits = (b, d) => (b.type || 'n') !== 'n' || b.c == null || b.c === bars[d].c || fever();
   // which way to push a brick: a wall it may hit (its color, or any in Fever / for plain bricks), the open path first, then the shortest
@@ -932,16 +944,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: '금 벽돌 등장! 점수 3배', newStone: '돌 벽돌 등장! 두 번 쳐야 깨져요', newBomb: '폭탄 등장! 벽에 치면 주변까지 펑',
       newRain: '무지개 벽돌 등장! 바를 한 번에 채워요', newDouble: '이제 벽돌이 두 개씩 나오기도 해요',
       loading: '불러오는 중…', diffLabel: '난이도', diffs: ['쉬움', '보통', '어려움', '아주 어려움'],
-      songPick: '스테이지 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
+      songPick: '월드 고르기', songBest: n => n ? '최고 ' + n : '기록 없음', bestSongHtml: (s, n) => s + ' 최고 기록 <b>' + n + '</b>점',
       tutBtn: '튜토리얼', tutNew: '처음이라면 여기부터', howBtn: '플레이 방법', playBtn: '플레이',
       rackHint: '옆으로 넘겨 스테이지를 골라 보세요',
       soon: '곧 공개', soonInfo: '이 스타일의 곡을 만들고 있어요. 곧 열려요!', nSongs: n => '곡 ' + n + '개',
       modeLabel: '모드', modeStage: '스테이지', endless: '무제한', endlessBest: n => '무제한 최고 ' + n,
-      goalHint: n => '곡이 이어서 나와요. ' + n + '점을 내면 클리어!', lockHint: '마지막 스테이지를 깨면 무제한이 열려요.',
+      goalHint: n => '곡이 이어서 나와요. ' + n + '점을 내면 클리어!', lockHint: '10스테이지를 깨면 무제한이 열려요.',
       endlessHint: '곡이 끝없이 이어지고 갈수록 벽돌이 많아져요. 판이 찰 때까지 버티세요!',
       toGo: n => '클리어까지 ' + n + '점', songN: n => n + '번째 곡', songsPlayed: '곡', endlessOver: '무제한 끝!',
       misHint: '곡이 끝날 때까지 버티면 클리어! 도전과제마다 별을 하나씩 받아요.', chDone: '도전과제 달성!', nextOpen: '다음 스테이지가 열렸어요!', nextStage: '다음 스테이지',
-      stageWord: '스테이지', challenges: '도전과제',
+      stageWord: '스테이지', challenges: '도전과제', worldLock: (n, have) => '별 ' + n + '개를 모으면 열려요. 지금 ' + have + '개 모았어요.',
       ch: { bricks: n => '벽돌 ' + n + '개 깨기', fever: n => '피버 ' + n + '번 터뜨리기', combo: n => '콤보 ' + n + ' 달성', calm: n => '벽돌 ' + n + '개 넘게 쌓지 않고 끝까지', clean: n => '틀린 벽 ' + n + '번 이하로 끝까지' },
       unlockNote: '무제한 모드가 열렸어요!', goal: '목표', nextSong: '다음 곡', rackEmpty: '곡을 준비하고 있어요. 곧 레코드가 들어와요!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? '최고 ' + best : '기록 없음'),
       tut: [
@@ -985,16 +997,16 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       newGold: 'Gold brick! 3× points', newStone: 'Stone brick! Takes two slams', newBomb: 'Bomb! Slam it to blast its neighbors',
       newRain: 'Rainbow brick! Fills a bar at once', newDouble: 'Bricks can now arrive in pairs',
       loading: 'Loading…', diffLabel: 'Difficulty', diffs: ['Easy', 'Normal', 'Hard', 'Expert'],
-      songPick: 'Pick a stage', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
+      songPick: 'Pick a world', songBest: n => n ? 'Best ' + n : 'No score yet', bestSongHtml: (s, n) => s + ' best <b>' + n + '</b>',
       tutBtn: 'Tutorial', tutNew: 'Start here', howBtn: 'How to play', playBtn: 'Play',
       rackHint: 'Swipe to pick a stage',
       soon: 'Coming soon', soonInfo: 'Songs in this style are on the way!', nSongs: n => n + ' songs',
       modeLabel: 'Mode', modeStage: 'Stage', endless: 'Endless', endlessBest: n => 'Endless best ' + n,
-      goalHint: n => 'Songs play back to back. Score ' + n + ' to clear!', lockHint: 'Clear the last stage to open Endless.',
+      goalHint: n => 'Songs play back to back. Score ' + n + ' to clear!', lockHint: 'Clear stage 10 to open Endless.',
       endlessHint: 'Songs never stop and more bricks come each song. Last as long as you can!',
       toGo: n => n + ' to clear', songN: n => 'Song ' + n, songsPlayed: 'Songs', endlessOver: 'Endless over!',
       misHint: 'Last until the song ends to clear! Each challenge gives a star.', chDone: 'Challenge done!', nextOpen: 'Next stage unlocked!', nextStage: 'Next stage',
-      stageWord: 'Stage', challenges: 'Challenges',
+      stageWord: 'Stage', challenges: 'Challenges', worldLock: (n, have) => 'Opens at ' + n + ' stars. You have ' + have + '.',
       ch: { bricks: n => 'Break ' + n + ' bricks', fever: n => 'Set off Fever ' + n + ' times', combo: n => 'Reach a ' + n + ' combo', calm: n => 'Never more than ' + n + ' bricks on the board', clean: n => 'Finish with ' + n + ' or fewer wrong walls' },
       unlockNote: 'Endless mode unlocked!', goal: 'Target', nextSong: 'NEXT', rackEmpty: 'New songs are on the way!', songInfo: (bpm, len, best) => bpm + ' BPM · ' + len + ' · ' + (best ? 'Best ' + best : 'No score yet'),
       tut: [
@@ -1604,6 +1616,11 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     kinds = kindsFor(song);
     if (mission) {
       Object.assign(mission, { done: [false, false, false], got: 0, fevers: 0, wrong: 0, peak: 0 });
+      for (let i = 0; i < (mission.cfg.pre || 0); i++) {   // bricks already on the board
+        const empty = grid.map((g, j) => g ? -1 : j).filter(j => j >= 0), j = empty[Math.floor(Math.random() * empty.length)];
+        const b = { x: j % N, y: Math.floor(j / N), born: performance.now(), type: 'n', hp: 1, c: nColors() > 1 ? Math.floor(Math.random() * nColors()) : null };
+        grid[j] = b; blocks.push(b);
+      }
     }
     songLabel();
     layout(); hud(); hudSong();
@@ -1611,7 +1628,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
 
   function songLabel() {
     $('lvl').textContent = song.name[lang];
-    $('sSub').textContent = song.tutorial ? '' : stage.name[lang] + (mission ? ' ' + (mission.k + 1) : '') + ' · ' + t('diffs')[diff] + (endless ? ' · ∞' : '');
+    $('sSub').textContent = song.tutorial ? '' : stage.name[lang] + (mission ? ' ' + (mission.k + 1) + ' · ' + mission.cfg.tag[lang] : ' · ' + t('diffs')[diff]) + (endless ? ' · ∞' : '');
   }
   // mission progress: stars done so far and the brick challenge's count; a live challenge done shows a banner
   const chText = c => t('ch')[c.type](c.n);
@@ -1656,6 +1673,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       ['bomb', has('bomb') ? 0.06 : 0],
       ['rain', has('rain') ? 0.035 : 0]
     ];
+    const mul = (mission && mission.cfg.odds) || {};
+    odds.forEach(o => { o[1] *= mul[o[0]] || 1; });
     let r = Math.random();
     for (const [kk, p] of odds) { if (r < p) return kk; r -= p; }
     return 'n';
@@ -1760,7 +1779,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       // wrong color: the brick bounces off the wall and stays on the edge cell, and the combo breaks
       toWall = false; combo = 0; if (mission) mission.wrong++;
       b.bump = { d, t: 1 };
-      if (diff >= 3 || song.tutorial) {   // only Expert (and the tutorial) turns the bars
+      if (song.tutorial || (mission ? mission.cfg.rot : diff >= 3)) {   // only Expert, stages with turning walls and the tutorial turn the bars
         bars = [bars[3], bars[0], bars[1], bars[2]];   // left -> top -> right -> bottom -> left, charge travels with its bar
         bars.forEach(bb => { bb.spots = []; });
         barRotAt = performance.now();
@@ -1908,7 +1927,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     const art = $('rArt'); art.innerHTML = song.tutorial ? '' : stageArt(stage);
     art.style.background = song.tutorial ? '' : `linear-gradient(155deg, ${stage.cover[0]}, #160b2a 70%)`;
     $('rSong').textContent = song.tutorial ? song.name[lang] : stage.name[lang] + (mission ? ' ' + (mission.k + 1) : '');
-    $('rDiff').textContent = song.tutorial ? '' : (mission ? song.name[lang] + ' · ' : '') + t('diffs')[diff] + ' · ' + N + ' × ' + N + (endless ? ' · ' + t('endless') : '');
+    $('rDiff').textContent = song.tutorial ? '' : (mission ? song.name[lang] + ' · ' + mission.cfg.tag[lang] : t('diffs')[diff]) + ' · ' + N + ' × ' + N + (endless ? ' · ' + t('endless') : '');
     $('grade').hidden = !mission; $('grade').classList.add('stars');
     if (mission) $('grade').textContent = starStr(mission.done.filter(Boolean).length);
     $('judges').innerHTML = (mission ? '<ul class="chlist">' + mission.ch.map((c, i) => `<li class="${mission.done[i] ? 'ok' : ''}">${mission.done[i] ? '★' : '☆'} ${chText(c)}</li>`).join('') + '</ul>' : '') + `<span>${t('maxCombo')} <b>${maxCombo}</b></span>` + (run && !mission ? `<span>${t('songsPlayed')} <b>${run.done + 1}</b></span>` : '');
@@ -2336,8 +2355,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
     else {
       if (!missionOpen(stage, pickMis)) pickMis = firstMission(stage);
       const m = stage.missions[pickMis];
-      mission = { k: pickMis, ch: challenges(m), done: [false, false, false], got: 0, fevers: 0, wrong: 0, peak: 0 };
-      diff = m.d; run = { order: [m.song], i: 0, done: 0 };
+      mission = { k: pickMis, cfg: m.cfg, ch: challenges(m), done: [false, false, false], got: 0, fevers: 0, wrong: 0, peak: 0 };
+      diff = m.d; run = { order: [m.song], i: 0, done: 0 }; n = m.cfg.size;
     }
     const sg = runSong(0), ok = $('okBtn');
     ok.disabled = true; ok.textContent = t('loading');
@@ -2485,7 +2504,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const b = rack.children[i];
       b.setAttribute('aria-checked', i === pickSong); b.setAttribute('aria-label', st.name[lang]);
       b.querySelector('b').textContent = st.name[lang];
-      b.querySelector('small').textContent = st.list.length ? st.sub[lang] : t('soon');
+      const lockW = st.list.length && !worldOpen(st);
+      b.classList.toggle('soon', !st.list.length || lockW);
+      b.querySelector('b').textContent = (lockW ? '🔒 ' : '') + st.name[lang];
+      b.querySelector('small').textContent = !st.list.length ? t('soon') : lockW ? '★ ' + worldNeed(st) : st.sub[lang];
       $('dots').children[i].classList.toggle('on', i === pickSong);
     });
     $('flipL').disabled = pickSong <= 0; $('flipR').disabled = pickSong >= STAGES.length - 1;
@@ -2497,7 +2519,9 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
       const nStars = st.missions.reduce((a, _, k) => a + starsOf(st, k), 0);
       $('dLv').textContent = has ? '★ ' + nStars + '/' + st.missions.length * 3 : '';
       const mis = st.missions[pickMis];
-      if (has && pickMode === 0) $('dInfo').textContent = t('stageWord') + ' ' + (pickMis + 1) + ' · ' + mis.song.name[lang] + ' · ' + t('diffs')[mis.d];
+      const wOpen = !has || worldOpen(st);
+      if (has && !wOpen) $('dInfo').textContent = t('worldLock', worldNeed(st), totalStars());
+      else if (has && pickMode === 0) $('dInfo').textContent = t('stageWord') + ' ' + (pickMis + 1) + ' · ' + mis.cfg.tag[lang] + ' · ' + mis.song.name[lang] + ' · ' + mis.cfg.size + ' × ' + mis.cfg.size;
       else if (has) {
         const v = getBest(st, pickSize, pickDiff, true);
         $('dInfo').textContent = st.list.map(x => x.name[lang]).join(' · ') + ' · ' + t('songBest', v ? v.toLocaleString() : 0);
@@ -2512,7 +2536,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         b.addEventListener('click', () => { pickMis = k; renderSongs(); });
         g.append(b);
       });
-      g.hidden = !has || pickMode === 1;
+      g.hidden = !has || pickMode === 1 || !wOpen;
       $('modeStage').setAttribute('aria-pressed', pickMode === 0);
       const me = $('modeEndless');
       me.textContent = (open ? '' : '🔒 ') + t('endless'); me.disabled = !open; me.setAttribute('aria-pressed', pickMode === 1);
@@ -2526,10 +2550,10 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
         challenges(mis).forEach((c, i) => { const li = document.createElement('li'); li.className = bits & (1 << i) ? 'ok' : ''; li.textContent = (bits & (1 << i) ? '★ ' : '☆ ') + chText(c); ul.append(li); });
         mh.append(ul);
       }
-      $('okBtn').hidden = !has;
-      $('modeRow').hidden = $('modeHint').hidden = !has;
+      $('okBtn').hidden = !has || !wOpen;
+      $('modeRow').hidden = $('modeHint').hidden = !has || !wOpen;
       $('diffTabs').closest('.sizepick').hidden = !has || pickMode === 0;
-      $('size4').closest('.sizepick').hidden = !has;
+      $('size4').closest('.sizepick').hidden = !has || pickMode === 0;   // a stage sets its own board size
     }
     try { tutDone = localStorage.getItem('brickslam-tut') === 'done'; } catch (e) {}
     $('tutBtn').innerHTML = '';
