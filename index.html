@@ -39,13 +39,37 @@
   --neon: "Monoton", "Black Han Sans", sans-serif;
   --display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --bg1: rgba(255, 63, 164, .28); --bg2: rgba(138, 77, 255, .12); --bg3: #1d1240; --gamebg: #1a1038;
+  --fl1: rgba(255, 63, 164, .55); --fl2: rgba(46, 242, 255, .32); --flsize: 64px;
   color-scheme: dark;
+}
+/* world themes: each music genre colors the board, glow, backdrop and floor its own way (the four wall colors never change) */
+:root[data-theme="house"] {   /* warm disco: amber and pink, a dotted dance floor */
+  --ground: #100706; --board: #1a0e0b; --line: #4a2a1a; --glow: #ffb347; --hot: #ff5fa2; --violet: #ff7a3d;
+  --bg1: rgba(255, 140, 60, .30); --bg2: rgba(255, 95, 162, .14); --bg3: #3a1a10; --gamebg: #2a130c;
+  --fl1: rgba(255, 179, 71, .5); --fl2: rgba(255, 95, 162, .4); --flsize: 48px;
+}
+:root[data-theme="dark"] {   /* dark electro: toxic green and violet in the dark */
+  --ground: #030805; --board: #08110c; --line: #1b3a28; --glow: #4dff7c; --hot: #9d6bff; --violet: #5b2bff;
+  --bg1: rgba(77, 255, 124, .16); --bg2: rgba(91, 43, 255, .18); --bg3: #0c2416; --gamebg: #0b1f14;
+  --fl1: rgba(77, 255, 124, .4); --fl2: rgba(157, 107, 255, .3); --flsize: 80px;
+}
+:root[data-theme="euro"] {   /* eurobeat: racing blue and yellow, a fast tight floor */
+  --ground: #03060f; --board: #081022; --line: #1d3263; --glow: #4ab0ff; --hot: #ffd84d; --violet: #2a6bff;
+  --bg1: rgba(74, 176, 255, .28); --bg2: rgba(255, 216, 77, .12); --bg3: #0e1f48; --gamebg: #0c1a3c;
+  --fl1: rgba(74, 176, 255, .55); --fl2: rgba(255, 216, 77, .35); --flsize: 40px;
+}
+:root[data-theme="metal"] {   /* hard rock: fire red and steel */
+  --ground: #0a0505; --board: #140b0b; --line: #3d2222; --glow: #ff6a3d; --hot: #ff2e4d; --violet: #a33;
+  --bg1: rgba(255, 60, 40, .28); --bg2: rgba(255, 216, 77, .1); --bg3: #2e0f0c; --gamebg: #250d0b;
+  --fl1: rgba(255, 106, 61, .5); --fl2: rgba(200, 200, 220, .25); --flsize: 56px;
 }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
-  background: radial-gradient(90% 45% at 50% 62%, rgba(255, 63, 164, .28) 0%, rgba(138, 77, 255, .12) 40%, rgba(7, 5, 15, 0) 72%) fixed,
-    radial-gradient(120% 60% at 50% -10%, #1d1240 0%, rgba(29, 18, 64, 0) 60%) fixed, var(--ground);
+  background: radial-gradient(90% 45% at 50% 62%, var(--bg1) 0%, var(--bg2) 40%, transparent 72%) fixed,
+    radial-gradient(120% 60% at 50% -10%, var(--bg3) 0%, transparent 60%) fixed, var(--ground);
+  transition: background-color .6s;
   color: var(--ink); font-family: var(--body);
   margin: 0; overscroll-behavior: none; word-break: keep-all;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
@@ -56,9 +80,12 @@ button { touch-action: manipulation; }
 .floor { position: fixed; left: -50%; right: -50%; bottom: 0; height: 46vh; pointer-events: none; z-index: -1; perspective: 260px; overflow: hidden;
   -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); mask-image: linear-gradient(to top, #000 30%, transparent); }
 .floor::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 300%; transform-origin: 50% 100%; transform: rotateX(64deg);
-  background-image: linear-gradient(rgba(255, 63, 164, .55) 2px, transparent 2px), linear-gradient(90deg, rgba(46, 242, 255, .32) 2px, transparent 2px);
-  background-size: 64px 64px; animation: floor var(--beat, .6s) linear infinite; }
-@keyframes floor { to { background-position: 0 64px; } }
+  background-image: linear-gradient(var(--fl1) 2px, transparent 2px), linear-gradient(90deg, var(--fl2) 2px, transparent 2px);
+  background-size: var(--flsize) var(--flsize); animation: floor var(--beat, .6s) linear infinite; }
+@keyframes floor { to { background-position: 0 var(--flsize); } }
+:root[data-theme="house"] .floor::before {   /* disco floor: lit dots instead of lines */
+  background-image: radial-gradient(circle, var(--fl1) 3px, transparent 4px), radial-gradient(circle, var(--fl2) 2px, transparent 3px);
+  background-position: 0 0, calc(var(--flsize) / 2) calc(var(--flsize) / 2); }
 body.playing .floor { height: 34vh; opacity: .7; }
 /* title screen: AI-painted backdrop (its own sun and grid replace the CSS ones), darkened under the buttons */
 .titlebg { position: fixed; inset: 0; z-index: -2; pointer-events: none; opacity: 0; transition: opacity .5s;
@@ -282,7 +309,7 @@ body.playing .songbg.on { opacity: .7; }
   position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;
   padding-inline: 16px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  box-sizing: border-box; background: radial-gradient(90% 55% at 50% 45%, #1a1038 0%, rgba(7, 5, 15, 0) 72%);
+  box-sizing: border-box; background: radial-gradient(90% 55% at 50% 45%, var(--gamebg) 0%, transparent 72%);
   transition: background-color .4s;
 }
 .game::before {
@@ -630,7 +657,13 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   const lane = $('lane'), lctx = lane.getContext('2d'), LH = 0;   // the note lane is gone with the rhythm rules
   const css = getComputedStyle(document.documentElement);
   const C = {};
-  ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
+  const readColors = () => ['board', 'line', 'brick', 'brick-hi', 'brick-lo', 'glow', 'fever', 'ink', 'muted', 'danger'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
+  readColors();
+  // world theme: the genre's colors on the page and the board (synthwave is the base look)
+  function setTheme(id) {
+    if (id && id !== 'synth') document.documentElement.dataset.theme = id; else delete document.documentElement.dataset.theme;
+    readColors();
+  }
 
   // 0 top, 1 right, 2 bottom, 3 left
   const DIRS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
@@ -2395,6 +2428,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   }
   function start(n, tutorial) {
     if (n) N = n;
+    setTheme(tutorial ? null : stage.id);
     if (tutorial) { run = null; mission = null; }   // play() sets up the stage's run
     swapping = false;
     song = tutorial ? TUT : runSong(0);
@@ -2414,6 +2448,8 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function showView(id) {
     if (id !== 'shelfView' && id !== 'howView' && sfx.musicMode === 'preview') sfx.music('title');
     ['titleView', 'howView', 'shelfView', 'rank'].forEach(v => { $(v).hidden = v !== id; });
+    if (id === 'titleView' || id === 'rank') setTheme(null);
+    else if (id === 'shelfView') setTheme(stage.id);
     window.scrollTo(0, 0);
   }
   function goHome() {
@@ -2447,7 +2483,7 @@ kbd { font-family: var(--body); border: 1px solid var(--line); border-radius: 4p
   function pullSong(i, scroll) {
     if (scroll) centerRec(i, true);
     if (i === pickSong) return;
-    pickSong = i; stage = STAGES[i];
+    pickSong = i; stage = STAGES[i]; setTheme(stage.id);
     try { localStorage.setItem('brickslam-stage', stage.id); } catch (e) {}
     if (pickMode === 1 && !endlessOpen(stage)) pickMode = 0;
     pickMis = firstMission(stage);
